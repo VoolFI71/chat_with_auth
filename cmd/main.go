@@ -6,15 +6,18 @@ import (
     //"encoding/json"
     //"database/sql"
     _ "github.com/jackc/pgx/v4/stdlib"
-    //"github.com/golang-jwt/jwt/v4"
     "github.com/gin-gonic/gin"
     "github.com/gin-contrib/sessions"
     "github.com/gin-contrib/sessions/postgres"
     //"github.com/gin-contrib/sessions/cookie"
     //"log"
+    //"net/http"
+    //"github.com/golang-jwt/jwt/v4"
     "chat/internal/handlers"
     "chat/internal/db"
+    "chat/internal/middleware"
 )
+
 
 func main() {
     router := gin.Default()
@@ -24,8 +27,8 @@ func main() {
         panic(err)
     }
     sessionsOptions := sessions.Options{
-        MaxAge:   4, // Время жизни сессии в секундах (например, 1 час)
-        HttpOnly: true, // Запрет на доступ к cookie через JavaScript
+        MaxAge:   4,
+        HttpOnly: true, 
     }
 
 
@@ -45,9 +48,11 @@ func main() {
 
     router.GET("/incr", handlers.Incr)
 
+    router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
+
     router.GET(`/`, handlers.MainPage)
     router.POST("/register", handlers.Register(database))
-
+    router.POST("/login", handlers.Login(database))
     if err := router.Run(":8080"); err != nil {
         panic(err)
     }
