@@ -4,56 +4,50 @@ import (
     //"time"
 	//"fmt"
     //"encoding/json"
-    "database/sql"
+    //"database/sql"
     _ "github.com/jackc/pgx/v4/stdlib"
     //"github.com/golang-jwt/jwt/v4"
     "github.com/gin-gonic/gin"
     "github.com/gin-contrib/sessions"
     "github.com/gin-contrib/sessions/postgres"
     //"github.com/gin-contrib/sessions/cookie"
-    "log"
+    //"log"
     "chat/internal/handlers"
-    //"chat/internal/db"
+    "chat/internal/db"
 )
-
-var db *sql.DB
 
 func main() {
     router := gin.Default()
 
-    db, err := sql.Open("postgres", "postgresql://postgres:1234@localhost:5432/go?sslmode=disable") 
-    if err != nil {
-      panic(err)
+    database, err := db.Connect()
+    if (err!=nil){
+        panic(err)
     }
-    defer db.Close()
-
-    if err := db.Ping(); err != nil {
-        log.Fatal("Ошибка при проверке соединения:", err)
-    }
-
-    // Создание таблицы (если она не существует)
-    _, err = db.Exec(`CREATE TABLE IF NOT EXISTS g (
-        username VARCHAR(50) UNIQUE,
-        password VARCHAR(100),
-        balance DECIMAL(10, 2)
-    )`)
-    if err != nil {
-        log.Fatal("Ошибка при создании таблицы:", err)
+    sessionsOptions := sessions.Options{
+        MaxAge:   4, // Время жизни сессии в секундах (например, 1 час)
+        HttpOnly: true, // Запрет на доступ к cookie через JavaScript
     }
 
-    store, err := postgres.NewStore(db, []byte("secret"))
+
+    store, err := postgres.NewStore(database, []byte("secret"))
     if err != nil {
         panic(err)
     }    
-    defer db.Close()
+    defer database.Close()
 
     
     router.Use(sessions.Sessions("mysession", store))
+    router.Use(func(c *gin.Context) {
+        session := sessions.Default(c)
+        session.Options(sessionsOptions) // Установка параметров сессии
+        c.Next()
+    })
 
+    router.GET("/incr", handlers.Incr)
 
     router.GET(`/`, handlers.MainPage)
-    router.POST("/register", handlers.Register(db))
-    router.GET("/incr", handlers.Incr)
+    router.POST("/register", handlers.Register(database))
+
     if err := router.Run(":8080"); err != nil {
         panic(err)
     }

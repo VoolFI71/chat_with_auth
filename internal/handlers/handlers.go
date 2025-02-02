@@ -55,18 +55,20 @@ func Register(db *sql.DB) gin.HandlerFunc {
     }
 }
 
-
 func Incr(c *gin.Context) {
-	session := sessions.Default(c)
-	var count int
-	v := session.Get("count")
-	if v == nil {
-	  count = 0
-	} else {
-	  count = v.(int)
-	  count++
-	}
-	session.Set("count", count)
+    session := sessions.Default(c)
+    var count int
+
+    v := session.Get("count")
+    if v == nil {
+        count = 1
+        session.Set("count", count) 
+        log.Println("Initializing count to 1")
+    } else {
+        count = v.(int) + 1
+        session.Set("count", count) 
+        log.Printf("Incrementing count to %d", count)
+    }
 	session.Save()
-	c.JSON(200, gin.H{"count": count})
-  }
+    c.JSON(200, gin.H{"count": count})
+}
