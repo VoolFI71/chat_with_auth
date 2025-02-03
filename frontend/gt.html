@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // Получаем токен из localStorage
+        const token = localStorage.getItem('token');
+
+        // Проверяем, есть ли токен
+        if (!token) {
+            alert('Пожалуйста, войдите в систему для доступа к этому ресурсу.');
+        } else {
+            // Отправляем запрос к защищенному ресурсу
+            fetch('http://127.0.0.1:8080/gt', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}` // Добавляем токен в заголовок
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка доступа к защищенному ресурсу');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Данные защищенного ресурса:', data);
+            })
+            .catch((error) => {
+                console.error('Ошибка:', error);
+            });
+        }
+    </script>
+</body>
+</html>

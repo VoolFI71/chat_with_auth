@@ -48,10 +48,16 @@ func main() {
         c.Next()
     })
     // router.Use(middleware.CORSMiddleware())
-    router.Use(cors.Default()) // Разрешает все источники
 
+    //router.Use(cors.Default()) // Разрешает все источники
+    router.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"http://127.0.0.1:5500"}, // Разрешенные источники
+        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Разрешенные методы
+        AllowHeaders:     []string{"Authorization", "Content-Type"}, // Разрешенные заголовки
+        ExposeHeaders:    []string{"Content-Length"}, // Заголовки, которые могут быть доступны клиенту
+        AllowCredentials: true, // Разрешить отправку учетных данных
+    }))
     router.GET("/incr", handlers.Incr)
-
     router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
 
     router.GET(`/`, handlers.MainPage)
