@@ -23,7 +23,7 @@ import (
 
 func main() {
     router := gin.Default()
-
+    //gin.SetMode(gin.ReleaseMode)
     database, err := db.Connect()
     if (err!=nil){
         panic(err)
