@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var jwtSecret = []byte("123") // Замените на ваш секретный ключ
+var jwtSecret = []byte("123")
 
 func MainPage(c *gin.Context) {
     response := map[int]int{5: 5}
@@ -30,12 +30,11 @@ func Register(db *sql.DB) gin.HandlerFunc {
             return
         }
 
-        // Проверка существования пользователя
         var exists bool
 		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM g WHERE username = $1)", user.Username).Scan(&exists)
 		
         if err != nil {
-			log.Printf("Database error: %v", err) // Логируем ошибку
+			log.Printf("Database error: %v", err)
 			c.JSON(500, gin.H{"error": "Database error"})
 			return
 		}
@@ -88,7 +87,7 @@ func Login(db *sql.DB) gin.HandlerFunc {
 
         token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
             "username": user.Username,
-            "exp":      time.Now().Add(time.Hour * 72).Unix(), // Токен будет действителен 72 часа
+            "exp":      time.Now().Add(time.Hour * 72).Unix(), 
         })
 
         tokenString, err := token.SignedString(jwtSecret)
@@ -102,7 +101,7 @@ func Login(db *sql.DB) gin.HandlerFunc {
         session.Set("token", tokenString)
         session.Save()
 
-        c.SetCookie("token", tokenString, 3600*72, "/", "127.0.0.1", false, true) // 1 час, HttpOnly = true
+        c.SetCookie("token", tokenString, 3600*72, "/", "127.0.0.1", false, true) 
         c.JSON(200, gin.H{
             "message": "Login successful",
             "username": user.Username,

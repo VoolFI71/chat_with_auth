@@ -24,4 +24,4 @@ services:
     build:
       context: ./frontend
     ports:
-      - "5500:5500"
+    - "5500:80"
