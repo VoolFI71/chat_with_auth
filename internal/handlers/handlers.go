@@ -41,13 +41,13 @@ func Register(db *sql.DB) gin.HandlerFunc {
 		}
 
         if exists {
-            c.JSON(400, gin.H{"error": "Username already exists"})
+            c.JSON(400, gin.H{"error": "Данный юзернейм уже используется"})
             return
         }
 
 		_, err = db.Exec("INSERT INTO g (username, password, balance) VALUES ($1, $2, $3)", user.Username, user.Password, 0)
         if err != nil {
-            c.JSON(500, gin.H{"error": "Failed to register user"})
+            c.JSON(500, gin.H{"error": "Ошибка при создании пользователя"})
             return
         }
 
@@ -73,7 +73,7 @@ func Login(db *sql.DB) gin.HandlerFunc {
 
         if err != nil {
             if err == sql.ErrNoRows {
-                c.JSON(401, gin.H{"error": "Invalid username or password"})
+                c.JSON(401, gin.H{"error": "Неверно указан логин или пароль"})
                 return
             }
             log.Printf("Database error: %v", err)
@@ -82,7 +82,7 @@ func Login(db *sql.DB) gin.HandlerFunc {
         }
 
         if user.Password != storedPassword {
-            c.JSON(401, gin.H{"error": "Invalid username or password"})
+            c.JSON(401, gin.H{"error": "Неверный логин или пароль"})
             return
         }
 
@@ -102,6 +102,7 @@ func Login(db *sql.DB) gin.HandlerFunc {
         session.Set("token", tokenString)
         session.Save()
 
+        c.SetCookie("token", tokenString, 3600*72, "/", "127.0.0.1", false, true) // 1 час, HttpOnly = true
         c.JSON(200, gin.H{
             "message": "Login successful",
             "username": user.Username,

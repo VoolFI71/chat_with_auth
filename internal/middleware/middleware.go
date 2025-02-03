@@ -8,15 +8,14 @@ import (
 	"strings"
 )
 
-var jwtSecret = []byte("123") // Замените на ваш секретный ключ
+var jwtSecret = []byte("123")
 
-// AuthMiddleware проверяет наличие и действительность JWT токена
 func AuthMiddleware() gin.HandlerFunc {
     return func(c *gin.Context) {
         authHeader := c.GetHeader("Authorization")
         if authHeader == "" {
             c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
-            c.Abort() // Прерываем выполнение следующего обработчика
+            c.Abort()
             return
         }
 
@@ -40,6 +39,23 @@ func AuthMiddleware() gin.HandlerFunc {
             return
         }
 
-        c.Next() // Продолжаем выполнение следующего обработчика
+        c.Next()
     }
 }
+
+// func CORSMiddleware() gin.HandlerFunc {
+//     return func(c *gin.Context) {
+//         // Устанавливаем необходимые заголовки CORS
+//         c.Header("Access-Control-Allow-Origin", "*") // Разрешаем все источники
+//         c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS") // Разрешаем методы
+//         c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept") // Разрешаем заголовки
+
+//         // Обрабатываем preflight запросы
+//         if c.Request.Method == http.MethodOptions {
+//             c.AbortWithStatus(http.StatusNoContent) // Возвращаем статус 204 No Content
+//             return
+//         }
+        
+//         c.Next() // Продолжаем обработку запроса
+//     }
+// }

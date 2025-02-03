@@ -16,6 +16,8 @@ import (
     "chat/internal/handlers"
     "chat/internal/db"
     "chat/internal/middleware"
+    "github.com/gin-contrib/cors"
+
 )
 
 
@@ -45,6 +47,8 @@ func main() {
         session.Options(sessionsOptions) // Установка параметров сессии
         c.Next()
     })
+    // router.Use(middleware.CORSMiddleware())
+    router.Use(cors.Default()) // Разрешает все источники
 
     router.GET("/incr", handlers.Incr)
 
