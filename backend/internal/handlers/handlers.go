@@ -20,6 +20,7 @@ func MainPage(c *gin.Context) {
 type User struct {
     Username string `json:"username"`
     Password string `json:"password"`
+    Email string `json:"email"`
 }
 
 func Register(db *sql.DB) gin.HandlerFunc {
@@ -30,21 +31,35 @@ func Register(db *sql.DB) gin.HandlerFunc {
             return
         }
 
-        var exists bool
-		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM g WHERE username = $1)", user.Username).Scan(&exists)
-		
+        var exists1 bool
+        var exists2 bool
+		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM g WHERE username = $1)", user.Username).Scan(&exists1)
+
         if err != nil {
 			log.Printf("Database error: %v", err)
 			c.JSON(500, gin.H{"error": "Database error"})
 			return
 		}
 
-        if exists {
+        err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM g WHERE email = $1)", user.Email).Scan(&exists2)
+
+        if err != nil {
+			log.Printf("Database error: %v", err)
+			c.JSON(500, gin.H{"error": "Database error"})
+			return
+		}
+
+        if exists1 {
             c.JSON(400, gin.H{"error": "Данный юзернейм уже используется"})
             return
         }
 
-		_, err = db.Exec("INSERT INTO g (username, password, balance) VALUES ($1, $2, $3)", user.Username, user.Password, 0)
+        if exists2 {
+            c.JSON(400, gin.H{"error": "Данная почта уже используется"})
+            return
+        }
+
+		_, err = db.Exec("INSERT INTO g (username, password, balance, email) VALUES ($1, $2, $3, $4)", user.Username, user.Password, 0, user.Email)
         if err != nil {
             c.JSON(500, gin.H{"error": "Ошибка при создании пользователя"})
             return

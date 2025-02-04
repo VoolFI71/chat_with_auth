@@ -54,6 +54,9 @@
         <label for="password">Пароль:</label>
         <input type="password" id="password" name="password" required>
 
+        <label for="email">Почта:</label>
+        <input type="email" id="email" name="email" required>
+
         <input type="submit" value="Зарегистрироватьс">
     </form>
 </div>
@@ -64,6 +67,7 @@
 
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
+        const email = document.getElementById('email').value;
 
         // Отправка POST-запроса на сервер
         fetch('http://127.0.0.1:8080/register', {
@@ -73,7 +77,8 @@
             },
             body: JSON.stringify({
                 username: username,
-                password: password
+                password: password,
+                email: email
             })
         })
         .then(response => {

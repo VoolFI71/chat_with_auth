@@ -20,10 +20,13 @@ func Connect() (*sql.DB, error) {
 		return nil, fmt.Errorf("Ошибка при проверке соединения: %w", err)
     }
 
+    //_, err = database.Exec(`DROP TABLE g`)
+
     _, err = database.Exec(`CREATE TABLE IF NOT EXISTS g (
         username VARCHAR(50) UNIQUE,
         password VARCHAR(100),
-        balance DECIMAL(10, 2)
+        balance DECIMAL(10, 2),
+        email VARCHAR(50) UNIQUE
     )`)
     if err != nil {
         database.Close()
