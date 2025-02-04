@@ -17,6 +17,8 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: postgres://postgres:1234@db:5432/go
+      MAILCODESEND: ${MAILCODESEND}
+      SMTPPASSWORD: ${SMTPPASSWORD}
       
     ports:
       - "8080:8080"
