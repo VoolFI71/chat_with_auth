@@ -14,6 +14,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"gopkg.in/gomail.v2"
+    "github.com/go-redis/redis/v8"
+    "context"
+    "sync"
 )
 
 var jwtSecret = []byte("123")
@@ -27,9 +30,29 @@ type User struct {
     Username string `json:"username"`
     Password string `json:"password"`
     Email string `json:"email"`
+    Code string `json:"code"`
 }
 
-func Sendmailfunc(user *User) error {
+var (
+    redisClient *redis.Client
+    once        sync.Once
+    ctx         = context.Background()
+)
+
+func createRedisClient() *redis.Client {
+    once.Do(func() {
+        redisClient = redis.NewClient(&redis.Options{
+            Addr:     "redis:6379", // Укажите адрес вашего Redis сервера
+            Password: "",            // Укажите пароль, если он есть
+            DB:       0,             // Используйте базу данных по умолчанию
+        })
+    })
+    return redisClient
+}
+
+
+func Sendmailfunc(user *User) error { //Если эта функция успешно возвратила nil. То код был отправлен на почту и код появился в редисе
+
     r := rand.New(rand.NewSource(time.Now().UnixNano()))
     confirmationCode := 100000 + r.Intn(899999)
     codeStr := strconv.Itoa(confirmationCode)
@@ -41,7 +64,7 @@ func Sendmailfunc(user *User) error {
     m.SetHeader("From", os.Getenv("MAILCODESEND"))
     m.SetHeader("To", user.Email)
     m.SetHeader("Subject", "Подтверждение регистрации")
-    m.SetBody("text/plain", "Ваш код подтверждения: "+codeStr)
+    m.SetBody("text/plain", "Ваш код подтверждения: " + codeStr)
     if err != nil {
         log.Fatal("Ошибка загрузки .env файла")
         return err
@@ -52,6 +75,18 @@ func Sendmailfunc(user *User) error {
 
         return err
     }
+
+    rdb := createRedisClient()
+    if _, err := rdb.Ping(ctx).Result(); err != nil {
+        return err
+    }
+    redisKey := user.Username + user.Email
+    err = rdb.Set(ctx, redisKey, codeStr, 3*time.Minute).Err() 
+    if err != nil {
+        return err
+    }
+
+    log.Printf("Значение для ключа %s установлено: %s\n", redisKey, codeStr)
 
     return nil // Успешная отправка
 }
@@ -92,17 +127,6 @@ func Sendmail(db *sql.DB) gin.HandlerFunc {
             return
         }
 
-		// _, err = db.Exec("INSERT INTO g (username, password, balance, email) VALUES ($1, $2, $3, $4)", user.Username, user.Password, 0, user.Email)
-        // if err != nil {
-        //     c.JSON(500, gin.H{"error": "Ошибка при создании пользователя"})
-        //     return
-        // }
-
-        // c.JSON(200, gin.H{
-        //     "message": "Можно создать пользователя с таким юзернеймом и почтой",
-        //     "username": user.Username,
-        //     "email": user.Email,
-        // })
         err = Sendmailfunc(&user)
         if err!=nil{
             c.JSON(501, gin.H{
@@ -113,6 +137,7 @@ func Sendmail(db *sql.DB) gin.HandlerFunc {
             })
             return
         }
+
         c.JSON(200, gin.H{
             "message": "Можно создать пользователя с таким юзернеймом и почтой",
             "username": user.Username,
@@ -122,7 +147,41 @@ func Sendmail(db *sql.DB) gin.HandlerFunc {
     }
 }
 
+func Reg(db *sql.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var user User
+        if err := c.ShouldBindJSON(&user); err != nil {
+            c.JSON(400, gin.H{"error": "Invalid input"})
+            return
+        }
 
+        rdb := createRedisClient()
+
+        redisKey := user.Username + user.Email
+
+        value, err := rdb.Get(ctx, redisKey).Result()
+        if err == redis.Nil {
+            log.Printf("Ключ %s не найден в Redis\n", redisKey)
+            c.JSON(500, gin.H{"error": "Попробуйте ещё раз"})
+            return
+        } else if err != nil {
+            log.Println("Ошибка при получении значения из Redis:", err)
+            c.JSON(500, gin.H{"error": "Ошибка при получении данных"})
+            return
+        } 
+        if value == user.Code {
+            _, err = db.Exec("INSERT INTO g (username, password, balance, email) VALUES ($1, $2, $3, $4)", user.Username, user.Password, 0.00, user.Email)
+            if err != nil {
+                log.Println("Ошибка при добавлении пользователя в базу данных:", err)
+                c.JSON(500, gin.H{"error": "Ошибка при добавлении пользователя"})
+                return
+            }
+            c.JSON(200, gin.H{"message": "Код подтверждения успешно подтверждён"})
+        } else {
+            c.JSON(401, gin.H{"error": "Неверный код подтверждения"})
+        }
+    }
+}
 
 func Login(db *sql.DB) gin.HandlerFunc {
     return func(c *gin.Context) {

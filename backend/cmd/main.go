@@ -17,7 +17,7 @@ import (
     "chat/internal/db"
     "chat/internal/middleware"
     "github.com/gin-contrib/cors"
-    "os"
+    //"os"
     "github.com/joho/godotenv"
 )
 
@@ -29,18 +29,10 @@ func main() {
         log.Fatalf("Ошибка загрузки .env файла: %v", err)
     }
 
-    // Проверяем текущий рабочий каталог
-    wd, err := os.Getwd()
-    if err != nil {
-        log.Fatal(err)
-    }
-    log.Println("Текущий рабочий каталог:", wd)
-
-
-
-
     router := gin.Default()
+
     database, err := db.Connect()
+
     if (err!=nil){
         panic(err)
     }
@@ -79,6 +71,7 @@ func main() {
     router.GET(`/`, handlers.MainPage)
     router.POST("/sendmail", handlers.Sendmail(database))
     router.POST("/login", handlers.Login(database))
+    router.POST("/reg", handlers.Reg(database))
     //router.POST("/sendmail", handlers.Sendmail)
     if err := router.Run(":8080"); err != nil {
         panic(err)
