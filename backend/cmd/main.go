@@ -1,24 +1,29 @@
 package main
 
 import (
-    //"time"
+	//"time"
 	//"fmt"
-    //"encoding/json"
-    //"database/sql"
-    _ "github.com/jackc/pgx/v4/stdlib"
-    "github.com/gin-gonic/gin"
-    "github.com/gin-contrib/sessions"
-    "github.com/gin-contrib/sessions/postgres"
-    //"github.com/gin-contrib/sessions/cookie"
-    "log"
-    //"net/http"
-    //"github.com/golang-jwt/jwt/v4"
-    "chat/internal/handlers"
-    "chat/internal/db"
-    "chat/internal/middleware"
-    "github.com/gin-contrib/cors"
-    //"os"
-    "github.com/joho/godotenv"
+	//"encoding/json"
+	//"database/sql"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/postgres"
+	"github.com/gin-gonic/gin"
+	//"github.com/gorilla/websocket"
+	_ "github.com/jackc/pgx/v4/stdlib"
+
+	//"github.com/gin-contrib/sessions/cookie"
+	"log"
+	//"net/http"
+	//"github.com/golang-jwt/jwt/v4"
+	"chat/internal/db"
+	"chat/internal/handlers"
+	"chat/internal/middleware"
+	"chat/internal/websocket"
+
+	"github.com/gin-contrib/cors"
+
+	//"os"
+	"github.com/joho/godotenv"
 )
 
 
@@ -31,8 +36,11 @@ func main() {
 
     router := gin.Default()
 
-    database, err := db.Connect()
-
+    database, err := db.ConnectAuth()
+    if (err!=nil){
+        panic(err)
+    }
+    databasemsg, err := db.ConnectChat()
     if (err!=nil){
         panic(err)
     }
@@ -48,6 +56,7 @@ func main() {
         panic(err)
     }    
     defer database.Close()
+    defer databasemsg.Close()
 
     
     router.Use(sessions.Sessions("mysession", store))
@@ -67,12 +76,17 @@ func main() {
         AllowCredentials: true, // Разрешить отправку учетных данных
     }))
 
+    go websocket.HandleMessages()
+
     router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
     router.GET(`/`, handlers.MainPage)
+    router.GET("/ws", websocket.SendMsg(databasemsg))
+    router.GET("/getmsg", websocket.GetMessagesHandler(databasemsg))
+    router.POST("/savemsg", websocket.SaveMsg(databasemsg))
+
     router.POST("/sendmail", handlers.Sendmail(database))
     router.POST("/login", handlers.Login(database))
     router.POST("/reg", handlers.Reg(database))
-    //router.POST("/sendmail", handlers.Sendmail)
     if err := router.Run(":8080"); err != nil {
         panic(err)
     }

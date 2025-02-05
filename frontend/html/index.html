@@ -1,11 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <p>Hello</p>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Чат</title>
+
+    </head>
+
+    <body>
+
+        <div class="chat-container">
+            <div class="chat-header">Чат</div>
+            <div class="chat-messages" id="messages"></div>
+            <div class="chat-input">
+                <input id="username" placeholder="Введите ваше имя" />
+                <input id="message" placeholder="Введите ваше сообщение" />
+                <button onclick="createMessage()">Отправить</button>
+            </div>
+
+        </div>
+        <script>
+            function getMessages() {
+                fetch('http://127.0.0.1:8080/getmsg', {
+                    method: 'GET', // Изменено на GET, если вы просто получаете сообщения
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data); 
+                    data.forEach(msg => {
+                        const li = document.createElement('li');
+                        li.textContent = `${msg.username}: ${msg.message}`; // Изменено на username и message
+                        messagesList.appendChild(li);
+                    });
+
+                })
+                .catch(error => {
+                    console.error('Error fetching messages:', error);
+                });
+            }
+
+            const token = localStorage.getItem('token');
+            const conn = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+
+            const messagesList = document.getElementById('messages');
+            
+            conn.onmessage = function(event) {
+                console.log(event.data)
+                const msg = JSON.parse(event.data);
+                const li = document.createElement('li');
+                li.textContent = `${msg.username}: ${msg.message}`; // Изменено на username и message
+                messagesList.appendChild(li);
+            };
+
+            // Функция для отправки сообщения на сервер
+
+            function createMessage() {
+                const username = document.getElementById('username').value.trim();
+                const message = document.getElementById('message').value.trim();
+
+                if (!username || !message) {
+                    alert('Пожалуйста, введите имя и сообщение.');
+                    return;
+                }
+                
+                // Отправка сообщения на сервер
+                fetch('http://127.0.0.1:8080/savemsg', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // Убедитесь, что token определен
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        message: message   
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json(); // Возвращаем JSON-ответ
+                    } else {
+                        throw new Error('Не удалось отправить сообщение');
+                    }
+                })
+                .then(data => {
+                    // Если сообщение успешно добавлено в базу данных
+                    const msg = { username: username, message: message };
+                    conn.send(JSON.stringify(msg)); // Отправляем сообщение через WebSocket
+                    document.getElementById('message').value = ''; // Очищаем поле ввода
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                });
+            }
+    
+            document.getElementById('sendButton').onclick = createMessage; // Привязываем обработчик к кнопке
+        </script>
 </body>
 </html>
