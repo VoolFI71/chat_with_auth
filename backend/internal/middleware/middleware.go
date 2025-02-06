@@ -1,17 +1,19 @@
 package middleware
 
 import (
-    "fmt"
+    //"fmt"
     _ "github.com/jackc/pgx/v4/stdlib"
     "github.com/gin-gonic/gin"
     "net/http"
     "github.com/golang-jwt/jwt/v4"
 	"strings"
+    //"github.com/gin-contrib/sessions"
+    //"github.com/gin-contrib/sessions/cookie"
 )
 
 var jwtSecret = []byte("123")
 
-func AuthMiddlewareLS() gin.HandlerFunc {
+func AuthMiddleware() gin.HandlerFunc {
     return func(c *gin.Context) {
         authHeader := c.GetHeader("Authorization")
         if authHeader == "" {
@@ -43,40 +45,42 @@ func AuthMiddlewareLS() gin.HandlerFunc {
         c.Next()
     }
 }
-func AuthMiddlewareC() gin.HandlerFunc {
-    return func(c *gin.Context) {
-        fmt.Println("All cookies:", c.Request.Cookies())
-        cookie, err := c.Cookie("token")
-        fmt.Println(cookie)
-        fmt.Println(55555)
-        if err != nil {
-            c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is missing"})
-            c.Abort()
-            return
-        }
+// func AuthMiddlewareC() gin.HandlerFunc {
+//     return func(c *gin.Context) {
+//         tokenString, err := c.Cookie("token")
+//         fmt.Println(tokenString)
 
-        // Проверка токена
-        token, err := jwt.Parse(cookie, func(token *jwt.Token) (interface{}, error) {
-            return jwtSecret, nil
-        })
+//         if err != nil || tokenString == "" {
+//             c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is missing"})
+//             c.Abort()
+//             return
+//         }
 
-        if err != nil || !token.Valid {
-            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-            c.Abort()	
-            return
-        }
+//         token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+//             // Проверка метода подписи
+//             if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+//                 return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+//             }
+//             return []byte(jwtSecret), nil // Убедитесь, что jwtSecret - это []byte
+//         })
 
-        // Вывод информации о токене
-        claims, ok := token.Claims.(jwt.MapClaims)
-        if ok && token.Valid {
-            fmt.Println("Token claims:", claims) // Выводим содержимое токена
-        } else {
-            fmt.Println("Invalid token claims")
-        }
+//         if err != nil || !token.Valid {
+//             c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+//             c.Abort()	
+//             return
+//         }
 
-        c.Next()
-    }
-}
+//         // Вывод информации о токене
+//         claims, ok := token.Claims.(jwt.MapClaims)
+//         if ok && token.Valid {
+//             fmt.Println("Token claims:", claims) // Выводим содержимое токена
+//         } else {
+//             fmt.Println("Invalid token claims")
+//         }
+
+//         c.Next()
+//     }
+// }
 
 // func CORSMiddleware() gin.HandlerFunc {
 //     return func(c *gin.Context) {

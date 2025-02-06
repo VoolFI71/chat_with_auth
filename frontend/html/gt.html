@@ -17,6 +17,7 @@
             // Отправляем запрос к защищенному ресурсу
             fetch('http://127.0.0.1:8080/gt', {
                 method: 'GET',
+                credentials: 'include', // Включить cookie в запрос
                 headers: {
                     'Authorization': `Bearer ${token}` // Добавляем токен в заголовок
                 }

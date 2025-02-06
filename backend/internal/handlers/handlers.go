@@ -10,13 +10,14 @@ import (
 	"time"
     "github.com/joho/godotenv"
     "os"
-	//"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"gopkg.in/gomail.v2"
     "github.com/go-redis/redis/v8"
     "context"
     "sync"
+    //"github.com/gin-contrib/sessions"
+    //"github.com/gin-contrib/sessions/cookie"
 )
 
 var jwtSecret = []byte("123")
@@ -221,10 +222,17 @@ func Login(db *sql.DB) gin.HandlerFunc {
             return
         }
 
-        cookie, err := c.Cookie("token1")
-
-        fmt.Println(cookie)
-
+        // cookie := http.Cookie{
+        //     Name:     "token",
+        //     Value:    tokenString,
+        //     Path:     "/",
+        //     MaxAge: 3000,
+        //     HttpOnly: true,
+        //     Secure:   false, // Установите true, если используете HTTPS
+        //     SameSite: http.SameSiteStrictMode, // Разрешить доступ с другого источника
+        // }
+        //http.SetCookie(c.Writer, &cookie)        
+        c.SetCookie("token", tokenString, 3000, "/", "", false, true)
         c.JSON(200, gin.H{
             "message": "Login successful",
             "username": user.Username,

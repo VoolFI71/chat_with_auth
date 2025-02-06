@@ -76,6 +76,8 @@
         // Отправка POST-запроса на сервер
         fetch('http://127.0.0.1:8080/login', {
             method: 'POST',
+            credentials: 'include', // Включить cookie в запрос
+
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -92,9 +94,7 @@
         })
         .then(data => {
             console.log('Успех:', data);
-            localStorage.setItem('token', data.token); // Предполагается, что токен возвращается в поле 'token'
-            document.cookie = "token1=" + data.token + "; path=/"; // Исправлено: добавлен символ ';' перед 'path=/'
-            
+            localStorage.setItem('token', data.token); // Предполагается, что токен возвращается в поле 'token'            
         })
         .catch((error) => {
             console.error('Ошибка:', error);
