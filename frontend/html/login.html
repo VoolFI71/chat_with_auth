@@ -59,6 +59,14 @@
 </div>
 
 <script>
+        // function setCookie(value) {
+        //     let expires = "";
+        //     const date = new Date();
+        //     date.setTime(date.getTime() + (3 * 24 * 60 * 60 * 1000)); // Устанавливаем срок действия на 3 дня
+        //     expires = "; expires=" + date.toUTCString();
+        //     document.cookie = "token=" + (value || "") + expires + "; path=/";
+        // }
+
     document.getElementById('loginForm').addEventListener('submit', function(event) {
         event.preventDefault(); // Предотвращаем перезагрузку страницы
 
@@ -85,6 +93,8 @@
         .then(data => {
             console.log('Успех:', data);
             localStorage.setItem('token', data.token); // Предполагается, что токен возвращается в поле 'token'
+            document.cookie = "token1=" + data.token + "; path=/"; // Исправлено: добавлен символ ';' перед 'path=/'
+            
         })
         .catch((error) => {
             console.error('Ошибка:', error);

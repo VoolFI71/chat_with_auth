@@ -48,7 +48,8 @@
             }
 
             const token = localStorage.getItem('token');
-            const conn = new WebSocket(`ws://localhost:8080/ws?token=${token}`);
+            
+            const conn = new WebSocket(`ws://localhost:8080/ws`);
 
             const messagesList = document.getElementById('messages');
             

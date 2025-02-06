@@ -65,7 +65,6 @@ func main() {
         session.Options(sessionsOptions)
         c.Next()
     })
-    // router.Use(middleware.CORSMiddleware())
 
     //router.Use(cors.Default()) // Разрешает все источники
     router.Use(cors.New(cors.Config{
@@ -78,9 +77,9 @@ func main() {
 
     go websocket.HandleMessages()
 
-    router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
+    router.GET("/gt", middleware.AuthMiddlewareC(), handlers.GT)
     router.GET(`/`, handlers.MainPage)
-    router.GET("/ws", websocket.SendMsg(databasemsg))
+    router.GET("/ws", middleware.AuthMiddlewareC(), websocket.SendMsg(databasemsg))
     router.GET("/getmsg", websocket.GetMessagesHandler(databasemsg))
     router.POST("/savemsg", websocket.SaveMsg(databasemsg))
 

@@ -10,7 +10,7 @@ import (
 	"time"
     "github.com/joho/godotenv"
     "os"
-	"github.com/gin-contrib/sessions"
+	//"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"gopkg.in/gomail.v2"
@@ -221,11 +221,10 @@ func Login(db *sql.DB) gin.HandlerFunc {
             return
         }
 
-		session := sessions.Default(c)
-        session.Set("token", tokenString)
-        session.Save()
+        cookie, err := c.Cookie("token1")
 
-        c.SetCookie("token", tokenString, 3600*72, "/", "127.0.0.1", false, true) 
+        fmt.Println(cookie)
+
         c.JSON(200, gin.H{
             "message": "Login successful",
             "username": user.Username,
