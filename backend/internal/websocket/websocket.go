@@ -44,19 +44,10 @@ func SendMsg(db *sql.DB)  gin.HandlerFunc { // функция для вебсо�
 				delete(clients, conn)
 				break
 			}
-
-			if err := saveMessage(db, msg.Username, msg.Message); err != nil {
-				fmt.Println("Error while saving message:", err)
-			}
 			
 			broadcast <- msg
 		}
 	}
-}
-
-func saveMessage(db *sql.DB, username, message string) error {
-	_, err := db.Exec("INSERT INTO chat (username, message) VALUES ($1, $2)", username, message)
-	return err
 }
 
 func SaveMsg(db *sql.DB) gin.HandlerFunc{ // функция для сохранения сообщения в бд. Если успешно сохранено. То можно  выполнять функцию для вебсокета SendMsg
@@ -82,7 +73,7 @@ func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		messages, err := GetLastMessages(db)
 		if err != nil {
-			c.JSON(500, gin.H{"error": "Unable to fetch messages"})
+			c.JSON(501, gin.H{"error": "Unable to fetch messages"})
 			return
 		}
 		c.JSON(200, messages)
@@ -92,6 +83,7 @@ func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
 	rows, err := db.Query("SELECT username, message, created_at FROM chat ORDER BY created_at DESC LIMIT 10")
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -99,16 +91,18 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
 	var messages []ChatMessage
 	for rows.Next() {
 		var msg ChatMessage
-		if err := rows.Scan(&msg.Username, &msg.Message); err != nil {
+        if err := rows.Scan(&msg.Username, &msg.Message, &msg.CreatedAt); err != nil {
+			fmt.Println(err)
 			return nil, err
 		}
 		messages = append(messages, msg)
 	}
 
 	if err := rows.Err(); err != nil {
+		fmt.Println(err)	
 		return nil, err
 	}
-
+	fmt.Println(messages)
 	return messages, nil
 }
 

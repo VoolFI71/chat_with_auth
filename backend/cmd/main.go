@@ -13,7 +13,7 @@ import (
 
 	//"github.com/gin-contrib/sessions/cookie"
 	"log"
-	"net/http"
+	//"net/http"
 	//"github.com/golang-jwt/jwt/v4"
 	"chat/internal/db"
 	"chat/internal/handlers"
@@ -86,7 +86,7 @@ func main() {
     router.POST("/sendmail", handlers.Sendmail(database))
     router.POST("/login", handlers.Login(database))
     router.POST("/reg", handlers.Reg(database))
-    
+
     if err := router.Run(":8080"); err != nil {
         panic(err)
     }

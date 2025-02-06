@@ -35,17 +35,23 @@
                 })
                 .then(data => {
                     console.log(data); 
+                    const messagesList = document.getElementById('messages'); // Получаем элемент
+                    messagesList.innerHTML = ''; // Очищаем предыдущие сообщения
                     data.forEach(msg => {
                         const li = document.createElement('li');
                         li.textContent = `${msg.username}: ${msg.message}`;
-                        messagesList.appendChild(li);
+                        // Добавляем элемент в начало списка
+                        messagesList.appendChild(li); // или messagesList.insertBefore(li, messagesList.firstChild);
                     });
-
                 })
                 .catch(error => {
                     console.error('Error fetching messages:', error);
                 });
             }
+
+            window.onload = function() {
+                getMessages(); 
+            };
 
             const token = localStorage.getItem('token');
             
@@ -58,7 +64,7 @@
                 const msg = JSON.parse(event.data);
                 const li = document.createElement('li');
                 li.textContent = `${msg.username}: ${msg.message}`; 
-                messagesList.appendChild(li);
+                messagesList.prepend(li);
             };
 
 
@@ -100,7 +106,7 @@
                 });
             }
     
-            document.getElementById('sendButton').onclick = createMessage; 
+            //document.getElementById('sendButton').onclick = createMessage; 
         </script>
 </body>
 </html>
