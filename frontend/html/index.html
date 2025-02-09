@@ -53,14 +53,12 @@
             };
 
             const token = localStorage.getItem('token');
-            console.log("Token:", token);
 
             const conn = new WebSocket(`ws://localhost:8080/ws`);
 
             const messagesList = document.getElementById('messages');
             
             conn.onmessage = function(event) {
-                console.log(event.data)
                 const msg = JSON.parse(event.data);
                 const li = document.createElement('li');
                 li.textContent = `${msg.username}: ${msg.message}`; 
