@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"database/sql"
+    "github.com/golang-jwt/jwt/v4"
+    "strings" 
 
 )
 
@@ -52,20 +54,75 @@ func SendMsg(db *sql.DB)  gin.HandlerFunc { // функция для вебсо�
 
 func SaveMsg(db *sql.DB) gin.HandlerFunc{ // функция для сохранения сообщения в бд. Если успешно сохранено. То можно  выполнять функцию для вебсокета SendMsg
 	return func (c *gin.Context) {
-		var user ChatMessage
-        if err := c.ShouldBindJSON(&user); err != nil {
-            c.JSON(400, gin.H{"error": "Invalid input"})
+		
+		var jwtSecret = []byte("123")
+		fmt.Println("kkkk")
+
+		tokenString := c.GetHeader("Authorization")
+
+		if len(tokenString) > 7 && strings.ToLower(tokenString[:7]) == "bearer " {
+            tokenString = tokenString[7:]
+        }
+
+        if tokenString == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
+			fmt.Println("kkkk2")
             return
         }
 
-		_, err := db.Exec("INSERT INTO chat (username, message) VALUES ($1, $2)", user.Username, user.Message)
+        // Парсим и проверяем токен
+        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+            // Проверяем метод подписи
+            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				fmt.Println(55555)
+                return nil, http.ErrNotSupported
+            }
+			fmt.Println(3333)
+            return jwtSecret, nil
+        })
+
+        if err != nil || !token.Valid {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			fmt.Println(err)
+
+            return
+        }
+
+        // Извлекаем логин пользователя из токена
+        claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok || !token.Valid {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			fmt.Println(err)
+
+            return
+        }
+
+        username, ok := claims["username"].(string)
+        if !ok {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Username not found in token"})
+			fmt.Println(err)
+
+            return
+        }
+
+
+		var user ChatMessage
+        if err := c.ShouldBindJSON(&user); err != nil {
+            c.JSON(400, gin.H{"error": "Invalid input"})
+			fmt.Println(err)
+            return
+        }
+
+		_, err = db.Exec("INSERT INTO chat (username, message) VALUES ($1, $2)", username, user.Message)
         if err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
+			fmt.Println(err)
+
             return
         }
 
         // Возвращаем успешный ответ
-        c.JSON(http.StatusOK, gin.H{"status": "Message saved"})
+        c.JSON(http.StatusOK, gin.H{"status": "Message saved", "username": username})
 	}
 }
 
@@ -102,7 +159,6 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
 		fmt.Println(err)	
 		return nil, err
 	}
-	fmt.Println(messages)
 	return messages, nil
 }
 

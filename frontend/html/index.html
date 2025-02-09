@@ -13,7 +13,6 @@
             <div class="chat-header">Чат</div>
             <div class="chat-messages" id="messages"></div>
             <div class="chat-input">
-                <input id="username" placeholder="Введите ваше имя" />
                 <input id="message" placeholder="Введите ваше сообщение" />
                 <button onclick="createMessage()">Отправить</button>
             </div>
@@ -54,7 +53,8 @@
             };
 
             const token = localStorage.getItem('token');
-            
+            console.log("Token:", token);
+
             const conn = new WebSocket(`ws://localhost:8080/ws`);
 
             const messagesList = document.getElementById('messages');
@@ -69,11 +69,10 @@
 
 
             function createMessage() {
-                const username = document.getElementById('username').value.trim();
                 const message = document.getElementById('message').value.trim();
 
-                if (!username || !message) {
-                    alert('Пожалуйста, введите имя и сообщение.');
+                if (!message) {
+                    alert('Пожалуйста, введите сообщение.');
                     return;
                 }
                 
@@ -84,7 +83,6 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        username: username,
                         message: message   
                     })
                 })
@@ -92,12 +90,13 @@
                     if (response.ok) {
                         return response.json();
                     } else {
+                        console.log(response)
                         throw new Error('Необходимо авторизоваться');
                     }
                 })
                 .then(data => {
                     // Если сообщение успешно добавлено в базу данных
-                    const msg = { username: username, message: message };
+                    const msg = { username: data.username, message: message };
                     conn.send(JSON.stringify(msg))
                     document.getElementById('message').value = ''; 
                 })
