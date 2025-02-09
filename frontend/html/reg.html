@@ -75,13 +75,12 @@
 
     <script>
         document.getElementById('sendCodeButton').addEventListener('click', function(event) {
-            event.preventDefault(); // Предотвращаем перезагрузку страницы
+            event.preventDefault();
 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const email = document.getElementById('email').value;
 
-            // Отправка POST-запроса на сервер
             fetch('http://127.0.0.1:8080/sendmail', {
                 method: 'POST',
                 headers: {
@@ -110,7 +109,7 @@
 
     <script>
         document.getElementById('registerForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Предотвращаем перезагрузку страницы
+            event.preventDefault(); 
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const email = document.getElementById('email').value;
@@ -123,8 +122,11 @@
             };
             fetch('http://127.0.0.1:8080/reg', {
                 method: 'POST',
+                credentials: 'include',
+
                 headers: {
                     'Content-Type': 'application/json'
+                    
                 },
                 body: JSON.stringify(userData)
             })
@@ -136,7 +138,8 @@
             })
             .then(data => {
                 console.log(data);
-                alert(data.message); // Показываем сообщение от сервера
+                window.location.href = "http://127.0.0.1:5500/login";
+
             })
             .catch(error => {
                 console.error('Ошибка:', error);

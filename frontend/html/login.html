@@ -68,12 +68,11 @@
         // }
 
     document.getElementById('loginForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // Предотвращаем перезагрузку страницы
+        event.preventDefault();
 
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
 
-        // Отправка POST-запроса на сервер
         fetch('http://127.0.0.1:8080/login', {
             method: 'POST',
             credentials: 'include', // Включить cookie в запрос
@@ -94,7 +93,9 @@
         })
         .then(data => {
             console.log('Успех:', data);
-            localStorage.setItem('token', data.token); // Предполагается, что токен возвращается в поле 'token'            
+            localStorage.setItem('token', data.token); 
+            window.location.href = "http://127.0.0.1:5500/";
+      
         })
         .catch((error) => {
             console.error('Ошибка:', error);

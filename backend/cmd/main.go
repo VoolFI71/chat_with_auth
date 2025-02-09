@@ -10,11 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 	//"github.com/gorilla/websocket"
 	_ "github.com/jackc/pgx/v4/stdlib"
+    "net/http"
 
 	//"github.com/gin-contrib/sessions/cookie"
 	"log"
 	//"net/http"
-	//"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v4"
 	"chat/internal/db"
 	"chat/internal/handlers"
 	"chat/internal/middleware"
@@ -29,6 +30,7 @@ import (
 
 func main() {
     err := godotenv.Load() // Путь к .env файлу
+    var jwtSecret = []byte("123")
 
     if err != nil {
         log.Fatalf("Ошибка загрузки .env файла: %v", err)
@@ -86,6 +88,53 @@ func main() {
     router.POST("/sendmail", handlers.Sendmail(database))
     router.POST("/login", handlers.Login(database))
     router.POST("/reg", handlers.Reg(database))
+
+    router.GET("/userinfo", func(c *gin.Context) {
+        tokenString := c.GetHeader("Authorization")
+        
+        // Удаляем "Bearer " из токена, если он присутствует
+        if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+            tokenString = tokenString[7:]
+        }
+
+        if tokenString == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
+            return
+        }
+
+        // Парсим и проверяем токен
+        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+            // Проверяем метод подписи
+            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+                return nil, http.ErrNotSupported
+            }
+            return jwtSecret, nil
+        })
+
+        if err != nil || !token.Valid {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+            return
+        }
+
+        // Извлекаем логин пользователя из токена
+        claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok || !token.Valid {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+            return
+        }
+
+        username, ok := claims["username"].(string)
+        if !ok {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Username not found in token"})
+            return
+        }
+
+        // Возвращаем имя пользователя
+        c.JSON(http.StatusOK, gin.H{
+            "username": username,
+        })
+    })
+
 
     if err := router.Run(":8080"); err != nil {
         panic(err)

@@ -16,9 +16,66 @@
                 <input id="message" placeholder="Введите ваше сообщение" />
                 <button onclick="createMessage()">Отправить</button>
             </div>
-
+            <div id="auth-buttons">
+                <button id="registerButton" onclick="redirectToRegister()">Регистрация</button>
+                <button id="loginButton" onclick="redirectToLogin()">Вход</button>
+            </div>
+            <div id="user-info" style="display: none;">
+                <span id="username-display"></span>
+                <button id="logoutButton" onclick="logout()">Выход</button>
+            </div>
         </div>
+
         <script>
+            function logout() {
+            localStorage.removeItem('token');
+            window.location.reload();
+            }
+
+            const token = localStorage.getItem('token');
+
+            if (token) {
+                document.getElementById('auth-buttons').style.display = 'none';
+                document.getElementById('user-info').style.display = 'block';
+                getUserInfo();
+                getMessages();
+            } else {
+                document.getElementById('auth-buttons').style.display = 'block';
+                document.getElementById('user-info').style.display = 'none';
+            }
+
+            function redirectToRegister() {
+                window.location.href = 'http://127.0.0.1:5500/reg'; 
+            }
+
+            function redirectToLogin() {
+                window.location.href = 'http://127.0.0.1:5500/login'; 
+            }
+
+            function getUserInfo() {
+                fetch('http://127.0.0.1:8080/userinfo', {
+                    method: 'GET',
+                    credentials: 'include', // Включить cookie в запрос
+
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('username-display').textContent = `Привет, ${data.username}!`;
+                })
+                .catch(error => {
+                    console.error('Error fetching user info:', error);
+                });
+            }
+
             function getMessages() {
                 fetch('http://127.0.0.1:8080/getmsg', {
                     method: 'GET', 
@@ -33,7 +90,6 @@
                     return response.json();
                 })
                 .then(data => {
-                    console.log(data); 
                     const messagesList = document.getElementById('messages'); // Получаем элемент
                     messagesList.innerHTML = ''; // Очищаем предыдущие сообщения
                     data.forEach(msg => {
@@ -52,7 +108,6 @@
                 getMessages(); 
             };
 
-            const token = localStorage.getItem('token');
 
             const conn = new WebSocket(`ws://localhost:8080/ws`);
 
@@ -88,7 +143,7 @@
                     if (response.ok) {
                         return response.json();
                     } else {
-                        console.log(response)
+                        alert('Необходимо авторизоваться')
                         throw new Error('Необходимо авторизоваться');
                     }
                 })
