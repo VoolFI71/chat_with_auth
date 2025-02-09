@@ -64,6 +64,10 @@ func Sendmailfunc(user *User) error { //Если эта функция успе�
 
     m.SetHeader("From", os.Getenv("MAILCODESEND"))
     m.SetHeader("To", user.Email)
+    fromEmail := os.Getenv("MAILCODESEND")
+    if fromEmail == "" {
+        fmt.Println("MAILCODESEND is not set")
+    }
     m.SetHeader("Subject", "Подтверждение регистрации")
     m.SetBody("text/plain", "Ваш код подтверждения: " + codeStr)
     if err != nil {

@@ -1,3 +1,4 @@
 .env
 /frontend/dockerfile
 /backend/dockerfile
+docker-compose.yml
