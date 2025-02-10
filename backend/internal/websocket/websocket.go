@@ -56,7 +56,6 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc{ // функция для сохран�
 	return func (c *gin.Context) {
 		
 		var jwtSecret = []byte("123")
-		fmt.Println("kkkk")
 
 		tokenString := c.GetHeader("Authorization")
 
@@ -66,7 +65,6 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc{ // функция для сохран�
 
         if tokenString == "" {
             c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
-			fmt.Println("kkkk2")
             return
         }
 
@@ -74,17 +72,13 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc{ // функция для сохран�
         token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
             // Проверяем метод подписи
             if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				fmt.Println(55555)
                 return nil, http.ErrNotSupported
             }
-			fmt.Println(3333)
             return jwtSecret, nil
         })
 
         if err != nil || !token.Valid {
             c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
-			fmt.Println(err)
-
             return
         }
 
