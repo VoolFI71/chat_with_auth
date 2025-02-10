@@ -37,6 +37,17 @@ func main() {
     }
 
     router := gin.Default()
+    router.Use(func(c *gin.Context) {
+        c.Header("Access-Control-Allow-Origin", "*")
+        c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS") 
+        c.Header("Access-Control-Allow-Headers", "Content-Type") 
+        if c.Request.Method == http.MethodOptions {
+            c.AbortWithStatus(http.StatusNoContent) 
+            return
+        }
+
+        c.Next() 
+    })
 
     database, err := db.ConnectAuth()
     if (err!=nil){

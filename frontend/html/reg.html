@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Регистрация</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Регистрация</title>
     <style>
             body {
                 font-family: Arial, sans-serif;
@@ -81,7 +78,7 @@
             const password = document.getElementById('password').value;
             const email = document.getElementById('email').value;
 
-            fetch('http://glebase.ru/sendmail', {
+            fetch('http://glebase.ru:8080/sendmail', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -120,7 +117,7 @@
                 email: email,
                 code: code
             };
-            fetch('http://glebase.ru/reg', {
+            fetch('http://glebase.ru:8080/reg', {
                 method: 'POST',
                 credentials: 'include',
 
@@ -138,7 +135,7 @@
             })
             .then(data => {
                 console.log(data);
-                window.location.href = "http://glebase.ru/login";
+                window.location.href = "http://glebase.ru:5500/login";
 
             })
             .catch(error => {
