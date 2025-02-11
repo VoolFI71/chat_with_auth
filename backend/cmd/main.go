@@ -81,7 +81,7 @@ func main() {
 
     //router.Use(cors.Default()) // Разрешает все источники
     router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://glebase.ru:5500"}, // Укажите адрес вашего фронтенда
+		AllowOrigins:     []string{"http://77.239.116.120:5500"}, // Укажите адрес вашего фронтенда
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Разрешенные методы
 		AllowHeaders:     []string{"Authorization", "Content-Type"}, // Разрешенные заголовки
 		ExposeHeaders:    []string{"Content-Length"}, // Заголовки, которые могут быть доступны клиенту
