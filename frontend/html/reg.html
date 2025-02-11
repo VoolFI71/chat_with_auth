@@ -100,8 +100,12 @@
             .then(data => {
                 console.log('Успех:', data);
                 alert(data.message); // Уведомление об успешной возможности создать аккаунт с этим юзернеймом и почтой
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert(error.message); // Показываем сообщение об ошибке
             });
-    })
+        })
     </script>
 
     <script>
