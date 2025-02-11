@@ -9,11 +9,7 @@ RUN go build -o main ./cmd/main.go
 
 EXPOSE 8080
 
-ARG MAILCODESEND
-ARG SMTPPASSWORD
-
-# Установите переменные окружения
-ENV MAILCODESEND=${MAILCODESEND}
-ENV SMTPPASSWORD=${SMTPPASSWORD}
+ENV MAILCODESEND=gleb.gleb.tula@mail.ru
+ENV SMTPPASSWORD=H3AAtZjrdkEuqkchHMYu
 
 CMD ["./main"]
