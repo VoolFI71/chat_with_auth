@@ -17,10 +17,13 @@ services:
   backend:
     build:
       context: ./backend
+      args:
+        MAILCODESEND: ${MAILCODESEND}
+        SMTPPASSWORD: ${SMTPPASSWORD}
     environment:
       DATABASE_URL: postgres://postgres:1234@db:5432/go
-      MAILCODESEND: gleb.gleb.tula@mail.ru
-      SMTPPASSWORD: H3AAtZjrdkEuqkchHMYu
+      MAILCODESEND: ${MAILCODESEND}
+      SMTPPASSWORD: ${SMTPPASSWORD}
       
     ports:
       - "8080:8080"
