@@ -31,7 +31,7 @@ import (
 
 
 func main() {
-    err := godotenv.Load()
+    err := godotenv.Load("../../.env")
     var jwtSecret = []byte("123")
 
     if err != nil {
