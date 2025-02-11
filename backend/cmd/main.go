@@ -38,17 +38,17 @@ func main() {
 
     router := gin.Default()
     router.Use(func(c *gin.Context) {
-        c.Header("Access-Control-Allow-Origin", "*")
+        c.Header("Access-Control-Allow-Origin", "http://77.239.116.120") // Укажите адрес вашего фронтенда
         c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS") 
-        c.Header("Access-Control-Allow-Headers", "Content-Type") 
+        c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type") 
         if c.Request.Method == http.MethodOptions {
             c.AbortWithStatus(http.StatusNoContent) 
             return
         }
-
+    
         c.Next() 
     })
-
+    
     database, err := db.ConnectAuth()
     if (err!=nil){
         panic(err)
@@ -80,13 +80,7 @@ func main() {
     })
 
     //router.Use(cors.Default()) // Разрешает все источники
-    router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://77.239.116.120"}, // Укажите адрес вашего фронтенда
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Разрешенные методы
-		AllowHeaders:     []string{"Authorization", "Content-Type"}, // Разрешенные заголовки
-		ExposeHeaders:    []string{"Content-Length"}, // Заголовки, которые могут быть доступны клиенту
-		AllowCredentials: true, // Разрешить отправку учетных данных
-	}))
+
 
     go websocket.HandleMessages()
 
