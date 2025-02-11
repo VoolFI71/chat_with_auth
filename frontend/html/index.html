@@ -45,15 +45,15 @@
             }
 
             function redirectToRegister() {
-                window.location.href = 'http://77.239.116.120:5500/reg'; 
+                window.location.href = 'http://glebase.ru:5500/reg'; 
             }
 
             function redirectToLogin() {
-                window.location.href = 'http://77.239.116.120:5500/login'; 
+                window.location.href = 'http://glebase.ru:5500/login'; 
             }
 
             function getUserInfo() {
-                fetch('http://77.239.116.120:8080/userinfo', {
+                fetch('http://glebase.ru:8080/userinfo', {
                     method: 'GET',
                     credentials: 'include', // Включить cookie в запрос
 
@@ -77,7 +77,7 @@
             }
 
             function getMessages() {
-                fetch('http://77.239.116.120/getmsg', {
+                fetch('http://glebase.ru/getmsg', {
                     method: 'GET', 
                     headers: {
                         'Content-Type': 'application/json',
@@ -109,7 +109,7 @@
             };
 
 
-            const conn = new WebSocket(`ws://77.239.116.120:8080/ws`);
+            const conn = new WebSocket(`ws://glebase.ru:8080/ws`);
 
             const messagesList = document.getElementById('messages');
             
@@ -129,7 +129,7 @@
                     return;
                 }
                 
-                fetch('http://77.239.116.120:8080/savemsg', {
+                fetch('http://glebase.ru:8080/savemsg', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
