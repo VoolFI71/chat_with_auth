@@ -5,21 +5,26 @@ import (
 	//"fmt"
 	//"encoding/json"
 	//"database/sql"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-gonic/gin"
+
 	//"github.com/gorilla/websocket"
+	"net/http"
+
 	_ "github.com/jackc/pgx/v4/stdlib"
-    "net/http"
 
 	//"github.com/gin-contrib/sessions/cookie"
 	"log"
 	//"net/http"
-	"github.com/golang-jwt/jwt/v4"
 	"chat/internal/db"
 	"chat/internal/handlers"
 	"chat/internal/middleware"
 	"chat/internal/websocket"
+
+	"github.com/golang-jwt/jwt/v4"
+
 	//"os"
 	"github.com/joho/godotenv"
 )
@@ -34,17 +39,13 @@ func main() {
     }
 
     router := gin.Default()
-    router.Use(func(c *gin.Context) {
-        c.Header("Access-Control-Allow-Origin", "http://77.239.116.120") // Укажите адрес вашего фронтенда
-        c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS") 
-        c.Header("Access-Control-Allow-Headers", "Authorization, Content-Type") 
-        if c.Request.Method == http.MethodOptions {
-            c.AbortWithStatus(http.StatusNoContent) 
-            return
-        }
-    
-        c.Next() 
-    })
+    router.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"http://77.239.116.120"}, // Укажите адрес вашего фронтенда
+        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Разрешенные методы
+        AllowHeaders:     []string{"Authorization", "Content-Type"}, // Разрешенные заголовки
+        ExposeHeaders:    []string{"Content-Length"}, // Заголовки, которые могут быть доступны клиенту
+        AllowCredentials: true, // Разрешить отправку учетных данных
+    }))
 
     database, err := db.ConnectAuth()
     if (err!=nil){
