@@ -31,7 +31,7 @@ import (
 
 
 func main() {
-    err := godotenv.Load()
+    err := godotenv.Load() // Путь к .env файлу
     var jwtSecret = []byte("123")
 
     if err != nil {
