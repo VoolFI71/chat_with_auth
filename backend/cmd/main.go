@@ -20,9 +20,6 @@ import (
 	"chat/internal/handlers"
 	"chat/internal/middleware"
 	"chat/internal/websocket"
-
-	"github.com/gin-contrib/cors"
-
 	//"os"
 	"github.com/joho/godotenv"
 )
@@ -48,7 +45,7 @@ func main() {
     
         c.Next() 
     })
-    
+
     database, err := db.ConnectAuth()
     if (err!=nil){
         panic(err)
