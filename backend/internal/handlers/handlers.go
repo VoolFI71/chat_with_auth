@@ -135,7 +135,7 @@ func Sendmail(db *sql.DB) gin.HandlerFunc {
         err = Sendmailfunc(&user)
         if err!=nil{
             c.JSON(501, gin.H{
-                "message": "Код подтверждения отправлен на почту",
+                "message": "Данная почта уже используется", // тут добавить ошибку сервера и ошибку клиента
                 "username": user.Username,
                 "email": user.Email,
                 "error": "Ошибка при отправке кода на почту",
@@ -144,7 +144,7 @@ func Sendmail(db *sql.DB) gin.HandlerFunc {
         }
 
         c.JSON(200, gin.H{
-            "message": "Можно создать пользователя с таким юзернеймом и почтой",
+            "message": "Код подтверждения отправлен на почту",
             "username": user.Username,
             "email": user.Email,
             "status": "Код успешно отправлен на почту",
