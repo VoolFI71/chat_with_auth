@@ -132,7 +132,7 @@ func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 }
 
 func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
-	rows, err := db.Query("SELECT username, message, created_at FROM chat ORDER BY created_at DESC LIMIT 10")
+	rows, err := db.Query("SELECT username, message, created_at FROM chat ORDER BY created_at DESC LIMIT 75")
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
