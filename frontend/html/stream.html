@@ -14,28 +14,30 @@
         const video = document.getElementById('video');
         const startButton = document.getElementById('start');
         const ws = new WebSocket(`ws://glebase.ru:8080/stream`);
-
+    
         startButton.onclick = async () => {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            // Получаем доступ к веб-камере и микрофону
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             video.srcObject = stream;
-
+    
             const peerConnection = new RTCPeerConnection();
+            // Добавляем треки из потока в соединение
             stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-
+    
             peerConnection.onicecandidate = event => {
                 if (event.candidate) {
                     ws.send(JSON.stringify({ type: 'candidate', candidate: event.candidate }));
                 }
             };
-
+    
             peerConnection.ontrack = event => {
                 video.srcObject = event.streams[0];
             };
-
+    
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
             ws.send(JSON.stringify({ type: 'offer', offer: offer }));
-
+    
             ws.onmessage = async (message) => {
                 const data = JSON.parse(message.data);
                 if (data.type === 'answer') {
@@ -46,5 +48,6 @@
             };
         };
     </script>
+    
 </body>
 </html>
