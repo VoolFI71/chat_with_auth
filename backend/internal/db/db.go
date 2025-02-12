@@ -61,10 +61,10 @@ func ConnectChat() (*sql.DB, error) {
         return nil, err
     }
 
-    _, err = database.Exec("CREATE INDEX idx_created_at ON chat (created_at)")
-    if err != nil {
-        fmt.Println("Error creating index:", err)
-        return nil, err
-    }
+    // _, err = database.Exec("CREATE INDEX idx_created_at ON chat (created_at)")
+    // if err != nil {
+    //     fmt.Println("Error creating index:", err)
+    //     return nil, err
+    // }
     return database, nil
 }
