@@ -29,7 +29,7 @@ func ConnectAuth() (*sql.DB, error) {
     )`)
     if err != nil {
         defer database.Close()
-        return nil, fmt.Errorf("Ошибка при создании таблицы: %w", err)
+        return nil, err
     }
 
     return database, nil
@@ -58,8 +58,13 @@ func ConnectChat() (*sql.DB, error) {
     )`)
     if err != nil {
         defer database.Close()
-        return nil, fmt.Errorf("Ошибка при создании таблицы: %w", err)
+        return nil, err
     }
 
+    _, err = database.Exec("CREATE INDEX idx_created_at ON chat (created_at)")
+    if err != nil {
+        fmt.Println("Error creating index:", err)
+        return nil, err
+    }
     return database, nil
 }
