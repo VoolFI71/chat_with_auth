@@ -13,7 +13,7 @@
     <script>
         const video = document.getElementById('video');
         const startButton = document.getElementById('start');
-        const ws = new WebSocket(`ws://127.0.0.1//stream`);
+        const ws = new WebSocket(`ws://glebase.ru/stream`);
 
         startButton.onclick = async () => {
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
