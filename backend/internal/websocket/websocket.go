@@ -8,7 +8,7 @@ import (
 	"database/sql"
     "github.com/golang-jwt/jwt/v4"
     "strings" 
-
+	"sync"
 )
 
 var upgrader = websocket.Upgrader{
@@ -171,5 +171,53 @@ func HandleMessages() {
 				delete(clients, client)
 			}
 		}
+	}
+}
+
+
+
+var upgrader_stream = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+var mu sync.Mutex
+var viewers = make(map[*websocket.Conn]bool)
+
+// Обработчик WebSocket для Gin
+func HandleWebSocket(c *gin.Context) {
+	w := c.Writer
+	r := c.Request
+
+	conn, err := upgrader_stream.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Error while upgrading connection:", err)
+		return
+	}
+	defer conn.Close()
+
+	mu.Lock()
+	viewers[conn] = true
+	mu.Unlock()
+
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			mu.Lock()
+			delete(viewers, conn)
+			mu.Unlock()
+			break
+		}
+
+		// Рассылаем сообщение всем подключенным клиентам
+		mu.Lock()
+		for client := range viewers {
+			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
+				client.Close()
+				delete(viewers, client)
+			}
+		}
+		mu.Unlock()
 	}
 }

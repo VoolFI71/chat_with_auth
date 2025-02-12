@@ -19,9 +19,6 @@ services:
       context: ./backend
     environment:
       DATABASE_URL: postgres://postgres:1234@db:5432/go
-      MAILCODESEND: gleb.gleb.tula@mail.ru
-      SMTPPASSWORD: H3AAtZjrdkEuqkchHMYu
-      
     ports:
       - "8080:8080"
     depends_on:
