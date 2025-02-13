@@ -6,10 +6,12 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Копируем HTML файлы
 COPY html/ /usr/share/nginx/html/
 
-    
-COPY certificate.pem /etc/nginx/certificate.pem
-COPY private_key.pem /etc/nginx/private_key.pem
+
 
 
 # Открываем порт 80
 EXPOSE 80
+
+    
+#COPY certificate.pem /etc/nginx/certificate.pem
+#COPY private_key.pem /etc/nginx/private_key.pem
