@@ -25,24 +25,99 @@
 <body>
     <h1>WebRTC Screen Broadcast</h1>
     <button id="start">Start Screen Broadcast</button>
+    <button id="get">Start Watch Stream</button>
     <div id="videoContainer">
-        <video autoplay playsinline></video>
+        <video id="localVideo" autoplay playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
     </div>
     <script>
         const startButton = document.getElementById('start');
+        const getButton = document.getElementById('get');
+
+
+
 
         startButton.onclick = async function startScreenShare() {
             try {
                 const stream = await navigator.mediaDevices.getDisplayMedia({
                     video: true,
-                    audio: true // если нужно захватить и аудио
+                    audio: true 
                 });
-                // Здесь можно использовать полученный поток, например, добавить его в видеопоток
-                const videoElement = document.querySelector('video');
-                videoElement.srcObject = stream;
+                const localVideoElement = document.getElementById('localVideo');
+                localVideoElement.srcObject = stream;
+
+                const ws = new WebSocket('ws://localhost:8080/wsstream');
+                
+                ws.onopen = () => {
+                    console.log('WebSocket соединение открыто');
+                    const mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(event.data);
+                            console.log(event.data)
+                        }
+                    };
+                    mediaRecorder.start(1000); // Отправляем данные каждые 1000 мс
+                };
+
+                ws.onclose = () => {
+                    console.log('WebSocket соединение закрыто');
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket ошибка: ', error);
+                };
+
+    
             } catch (err) {
                 console.error("Ошибка при захвате экрана: ", err);
             }
+        };
+        getButton.onclick = async function startWatchStream() {
+            const ws = new WebSocket('ws://localhost:8080/wsstream');
+
+            ws.onopen = () => {
+                console.log('WebSocket соединение открыто');
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket соединение закрыто');
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket ошибка: ', error);
+            };
+
+            ws.onmessage = (event) => {
+                const blob = new Blob([event.data], { type: 'video/webm' });
+                console.log('Размер полученного blob:', blob.size);
+    
+                if (blob.size === 0) {
+                    console.error('Полученный blob пустой');
+                    return;
+                }
+                const url = URL.createObjectURL(blob);
+                const remoteVideoElement = document.getElementById('remoteVideo');
+
+                if (!remoteVideoElement) {
+                    console.error('Элемент remoteVideo не найден');
+                    return;
+                }
+
+                remoteVideoElement.src = url;
+
+                remoteVideoElement.onloadedmetadata = () => {
+                    console.log('Метаданные видео загружены, воспроизведение начинается');
+                    remoteVideoElement.play().catch(error => {
+                        console.error('Ошибка при попытке воспроизведения:', error);
+                    });
+                };
+
+                // Добавляем обработчик для отладки, если видео не загружается
+                remoteVideoElement.onerror = (error) => {
+                    console.error('Ошибка при загрузке видео:', error);
+                };
+            };
         };
     </script>
 </body>

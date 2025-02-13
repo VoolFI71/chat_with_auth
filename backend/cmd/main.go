@@ -84,7 +84,7 @@ func main() {
 
     router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
     router.GET(`/`, handlers.MainPage)
-    router.GET("/wsstream", stream.HandleWebSocket) // Теперь это работает
+    router.GET("/wsstream", stream.Stream) // Теперь это работает
 
     router.GET("/ws", websocket.SendMsg(databasemsg))
     router.GET("/getmsg", websocket.GetMessagesHandler(databasemsg))
