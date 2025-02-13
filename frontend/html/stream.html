@@ -3,46 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Screen Sharing with WebRTC</title>
+    <title>WebRTC Screen Broadcast</title>
 </head>
 <body>
-    <h1>Screen Sharing</h1>
-    <button id="start">Start Screen Sharing</button>
-    <video id="video" autoplay></video>
-
+    <h1>WebRTC Screen Broadcast</h1>
+    <button id="start">Start Screen Broadcast</button>
     <script>
-        const video = document.getElementById('video');
         const startButton = document.getElementById('start');
-        const ws = new WebSocket(`ws://127.0.0.1//stream`);
+        let pc;
+        let ws;
 
         startButton.onclick = async () => {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-            video.srcObject = stream;
+            ws = new WebSocket('ws://localhost:8080/ws');
 
-            const peerConnection = new RTCPeerConnection();
-            stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+            ws.onopen = async () => {
+                pc = new RTCPeerConnection();
 
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    ws.send(JSON.stringify({ type: 'candidate', candidate: event.candidate }));
+                // Получите медиа-данные с экрана
+                try {
+                    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+
+                    // Отправьте предложение на сервер
+                    ws.send(JSON.stringify({ type: 'offer', sdp: offer.sdp }));
+
+                    // Обработайте ICE кандидаты
+                    pc.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            ws.send(JSON.stringify({ type: 'candidate', candidate: event.candidate }));
+                        }
+                    };
+                } catch (err) {
+                    console.error("Error accessing display media.", err);
                 }
             };
 
-            peerConnection.ontrack = event => {
-                video.srcObject = event.streams[0];
-            };
-
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            ws.send(JSON.stringify({ type: 'offer', offer: offer }));
-
-            ws.onmessage = async (message) => {
-                const data = JSON.parse(message.data);
-                if (data.type === 'answer') {
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-                } else if (data.type === 'candidate') {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                }
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                console.log("Received message:", message);
             };
         };
     </script>

@@ -182,7 +182,7 @@ var upgrader_stream = websocket.Upgrader{
 	},
 }
 
-var mu sync.Mutex
+var mu sync.RWMutex
 var viewers = make(map[*websocket.Conn]bool)
 
 // Обработчик WebSocket для Gin
@@ -200,24 +200,30 @@ func HandleWebSocket(c *gin.Context) {
 	mu.Lock()
 	viewers[conn] = true
 	mu.Unlock()
+	fmt.Println("New client connected")
 
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
+			fmt.Println("Error reading message:", err)
 			mu.Lock()
 			delete(viewers, conn)
 			mu.Unlock()
+			fmt.Println("Client disconnected")
 			break
 		}
 
 		// Рассылаем сообщение всем подключенным клиентам
-		mu.Lock()
+		mu.RLock() // Используем RLock для чтения
 		for client := range viewers {
 			if err := client.WriteMessage(websocket.TextMessage, msg); err != nil {
+				fmt.Println("Error writing message to client:", err)
 				client.Close()
+				mu.Lock()
 				delete(viewers, client)
+				mu.Unlock()
 			}
 		}
-		mu.Unlock()
+		mu.RUnlock() // Освобождаем RLock
 	}
 }
