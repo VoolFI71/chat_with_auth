@@ -4,47 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebRTC Screen Broadcast</title>
+    <style>
+
+        #videoContainer {
+            width: 1280px; /* Ширина контейнера */
+            height: 720px; /* Высота контейнера */
+            border: 2px solid #000; /* Граница для визуализации */
+            overflow: hidden; /* Скрыть переполнение */
+            position: relative; /* Для позиционирования видео */
+        }
+        
+        video {
+            width: 100%; /* Ширина видео 100% от контейнера */
+            height: 100%; /* Высота видео 100% от контейнера */
+            object-fit: cover; /* Обеспечить обрезку видео, чтобы заполнить контейнер */
+        }
+
+    </style>
 </head>
 <body>
     <h1>WebRTC Screen Broadcast</h1>
     <button id="start">Start Screen Broadcast</button>
+    <div id="videoContainer">
+        <video autoplay playsinline></video>
+    </div>
     <script>
         const startButton = document.getElementById('start');
-        let pc;
-        let ws;
 
-        startButton.onclick = async () => {
-            ws = new WebSocket('ws://localhost:8080/ws');
-
-            ws.onopen = async () => {
-                pc = new RTCPeerConnection();
-
-                // Получите медиа-данные с экрана
-                try {
-                    const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                    stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-                    const offer = await pc.createOffer();
-                    await pc.setLocalDescription(offer);
-
-                    // Отправьте предложение на сервер
-                    ws.send(JSON.stringify({ type: 'offer', sdp: offer.sdp }));
-
-                    // Обработайте ICE кандидаты
-                    pc.onicecandidate = (event) => {
-                        if (event.candidate) {
-                            ws.send(JSON.stringify({ type: 'candidate', candidate: event.candidate }));
-                        }
-                    };
-                } catch (err) {
-                    console.error("Error accessing display media.", err);
-                }
-            };
-
-            ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                console.log("Received message:", message);
-            };
+        startButton.onclick = async function startScreenShare() {
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: true // если нужно захватить и аудио
+                });
+                // Здесь можно использовать полученный поток, например, добавить его в видеопоток
+                const videoElement = document.querySelector('video');
+                videoElement.srcObject = stream;
+            } catch (err) {
+                console.error("Ошибка при захвате экрана: ", err);
+            }
         };
     </script>
 </body>
