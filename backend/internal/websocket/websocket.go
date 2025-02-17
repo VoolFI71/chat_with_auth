@@ -50,7 +50,9 @@ func SendMsg(db *sql.DB)  gin.HandlerFunc { // функция для вебсо�
 				break
 			}
 			
-			broadcast <- msg
+			go func(message ChatMessage) {
+				broadcast <- message
+			}(msg)
 		}
 	}
 }
@@ -113,12 +115,13 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc {
             }
         }
 
-        // Сохранение сообщения и изображения в базе данных
-        _, err = db.Exec("INSERT INTO chat (username, message, image) VALUES ($1, $2, $3)", username, message, imageData)
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
-            return
-        }
+        go func() {
+			_, err = db.Exec("INSERT INTO chat (username, message, image) VALUES ($1, $2, $3)", username, message, imageData)
+			if err != nil {
+				fmt.Println("Failed to save message:", err)
+				return
+			}
+		}()
 
         c.JSON(http.StatusOK, gin.H{"status": "Message saved", "username":  username})
     }
@@ -126,12 +129,14 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc {
 
 func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		messages, err := GetLastMessages(db)
-		if err != nil {
-			c.JSON(501, gin.H{"error": "Unable to fetch messages"})
-			return
-		}
-		c.JSON(200, messages)
+		go func() {
+			messages, err := GetLastMessages(db)
+			if err != nil {
+				c.JSON(501, gin.H{"error": "Unable to fetch messages"})
+				return
+			}
+			c.JSON(200, messages)
+		}()
 	}
 }
 
@@ -166,17 +171,18 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
 
 
 
-
 func HandleMessages() {
 	for {
 		msg := <-broadcast
-		for client := range clients {
-			err := client.WriteJSON(msg)
-			if err != nil {
-				fmt.Println("Error while writing message:", err)
-				client.Close()
-				delete(clients, client)
+		go func(message ChatMessage) {
+			for client := range clients {
+				err := client.WriteJSON(message)
+				if err != nil {
+					fmt.Println("Error while writing message:", err)
+					client.Close()
+					delete(clients, client)
+				}
 			}
-		}
+		}(msg)
 	}
 }
