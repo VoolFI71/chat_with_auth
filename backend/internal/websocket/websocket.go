@@ -129,14 +129,12 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc {
 
 func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		go func() {
-			messages, err := GetLastMessages(db)
-			if err != nil {
-				c.JSON(501, gin.H{"error": "Unable to fetch messages"})
-				return
-			}
-			c.JSON(200, messages)
-		}()
+		messages, err := GetLastMessages(db)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch messages"})
+			return
+		}
+		c.JSON(http.StatusOK, messages)
 	}
 }
 
