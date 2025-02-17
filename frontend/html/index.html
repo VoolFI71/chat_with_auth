@@ -14,6 +14,7 @@
             <div class="chat-messages" id="messages"></div>
             <div class="chat-input">
                 <input id="message" placeholder="Введите ваше сообщение" onkeydown="checkEnter(event)" />
+                <input type="file" id="image" accept="image/*" />
                 <button onclick="createMessage()">Отправить</button> 
             </div>
             <div id="auth-buttons">
@@ -212,41 +213,61 @@
                 }
             }
 
-            function createMessage() {
-                const message = document.getElementById('message').value.trim();
-
-                if (!message) {
-                    alert('Пожалуйста, введите сообщение.');
-                    return;
-                }
-                
-                fetch('http://127.0.0.1:8080/savemsg', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        message: message   
-                    })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else {
-                        alert('Необходимо авторизоваться')
-                        throw new Error('Необходимо авторизоваться');
+                function createMessage() {
+                    const message = document.getElementById('message').value.trim();
+                    const imageInput = document.getElementById('image')
+                    const image = imageInput.files.length > 0 ? imageInput.files[0] : null;
+                    const formData = new FormData(); 
+                    if (!message && !image) {
+                        alert('Пожалуйста, введите сообщение или загрузите изображение.');
+                        return;
                     }
-                })
-                .then(data => {
-                    // Если сообщение успешно добавлено в базу данных
-                    const msg = { username: data.username, message: message };
-                    conn.send(JSON.stringify(msg))
-                    document.getElementById('message').value = ''; 
-                })
-                .catch(error => {
-                    console.error('Ошибка:', error);
-                });
+
+                    if (message) {
+                        formData.append('message', message); // Добавляем текст сообщения
+                    }
+                    if (image) {
+                        formData.append('image', image); // Добавляем изображение
+                    }
+
+
+                    if (message || image) {
+                        fetch('http://127.0.0.1:8080/savemsg', {
+                            method: 'POST',
+                            headers: {
+                                //'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            // body: JSON.stringify({
+                            //     message: message   
+                            // })
+                            body: formData // Отправляем FormData
+                        })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else if (response.status === 401) { // Check for Unauthorized status
+                            alert('Необходимо авторизоваться');
+                            throw new Error('Необходимо авторизоваться');
+                        } else if (response.status === 400) { // Check for Bad Request status
+                            alert('Некорректный запрос');
+                            throw new Error('Некорректный запрос');
+                        } else {
+                            // Handle other status codes if necessary
+                            alert('Произошла ошибка: ' + response.status);
+                            throw new Error('Произошла ошибка: ' + response.status);
+                        }
+                    })
+                    .then(data => {
+                        const msg = { username: data.username, message: message };
+                        conn.send(JSON.stringify(msg))
+                        document.getElementById('message').value = ''; 
+                        imageInput.value = '';
+                    })
+                    .catch(error => {
+                        console.error('Ошибка:', error);
+                    });
+                }
             }
     
             //document.getElementById('sendButton').onclick = createMessage; 

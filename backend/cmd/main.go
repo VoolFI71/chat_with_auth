@@ -88,7 +88,9 @@ func main() {
 
     router.GET("/ws", websocket.SendMsg(databasemsg))
     router.GET("/getmsg", websocket.GetMessagesHandler(databasemsg))
-    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(databasemsg))
+    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(databasemsg)) //отправка сообщения
+    router.POST("/saveimage",  middleware.AuthMiddleware(), websocket.SaveMsg(databasemsg)) //отправка изображения
+
     router.POST("/sendmail", handlers.Sendmail(database))
     router.POST("/login", handlers.Login(database))
     router.POST("/reg", handlers.Reg(database))

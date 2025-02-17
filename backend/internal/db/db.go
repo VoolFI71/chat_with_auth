@@ -49,12 +49,17 @@ func ConnectChat() (*sql.DB, error) {
 		return nil, fmt.Errorf("Ошибка при проверке соединения: %w", err)
     }
 
-    //_, err = database.Exec(`DROP TABLE chat`)
+    // _, err = database.Exec(`DROP TABLE chat`)
+    // if err != nil {
+    //     defer database.Close()
+    //     return nil, err
+    // }
 
     _, err = database.Exec(`CREATE TABLE IF NOT EXISTS chat (
         username VARCHAR(50),
         message VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        image BYTEA
     )`)
     if err != nil {
         defer database.Close()

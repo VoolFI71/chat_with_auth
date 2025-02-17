@@ -5,60 +5,46 @@ import (
     "github.com/gorilla/websocket"
     "net/http"
     "sync"
-	"fmt"
+	//"fmt"
 )
-
 var upgrader = websocket.Upgrader{
     CheckOrigin: func(r *http.Request) bool {
-        return true
+        return true // Разрешаем все источники (для разработки)
     },
 }
 
-var clients = make(map[*websocket.Conn]bool) // Подключенные клиенты
-var mu sync.Mutex // Мьютекс для безопасного доступа к clients
-
-// HandleWebSocket принимает WebSocket соединение и обрабатывает сообщения
-func HandleWebSocket(conn *websocket.Conn) {
-    defer conn.Close()
-
-    mu.Lock()
-    clients[conn] = true
-    mu.Unlock()
-	fmt.Println("New client connected")
-
-    for {
-        _, msg, err := conn.ReadMessage()
-        if err != nil {
-			fmt.Println("Error reading video:", err)
-
-            mu.Lock()
-            delete(clients, conn)
-            mu.Unlock()
-			fmt.Println("Client disconnected")
-
-            break
-        }
-
-        // Рассылаем полученное сообщение всем подключенным клиентам
-        mu.Lock()
-        for client := range clients {
-            if err := client.WriteMessage(websocket.BinaryMessage, msg); err != nil {
-				fmt.Println("Error sending video to client:", err)
-
-                client.Close()
-                delete(clients, client)
-            }
-        }
-        mu.Unlock()
-    }
-}
-
+var clients = make(map[*websocket.Conn]bool)
+var mu sync.Mutex
 func Stream(c *gin.Context) {
-    conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-    if err != nil {
-        c.String(http.StatusInternalServerError, "Ошибка при подключении: %v", err)
-        return
-    }
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Could not upgrade connection")
+		return
+	}
+	defer conn.Close()
 
-    HandleWebSocket(conn)
+	mu.Lock()
+	clients[conn] = true
+	mu.Unlock()
+
+	for {
+		var msg map[string]interface{}
+		err := conn.ReadJSON(&msg)
+		if err != nil {
+			mu.Lock()
+			delete(clients, conn)
+			mu.Unlock()
+			break
+		}
+
+		// Отправляем сообщение всем подключенным клиентам
+		mu.Lock()
+		for client := range clients {
+			if err := client.WriteJSON(msg); err != nil {
+				client.Close()
+				delete(clients, client)
+			}
+		}
+		mu.Unlock()
+	}
 }
