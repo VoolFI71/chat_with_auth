@@ -59,14 +59,6 @@
 </div>
 
 <script>
-        // function setCookie(value) {
-        //     let expires = "";
-        //     const date = new Date();
-        //     date.setTime(date.getTime() + (3 * 24 * 60 * 60 * 1000)); // Устанавливаем срок действия на 3 дня
-        //     expires = "; expires=" + date.toUTCString();
-        //     document.cookie = "token=" + (value || "") + expires + "; path=/";
-        // }
-
     document.getElementById('loginForm').addEventListener('submit', function(event) {
         event.preventDefault();
 
@@ -75,7 +67,7 @@
 
         fetch('http://glebase.ru:8080/login', {
             method: 'POST',
-            credentials: 'include', // Включить cookie в запрос
+            credentials: 'include', 
 
             headers: {
                 'Content-Type': 'application/json'
@@ -92,7 +84,6 @@
             return response.json();
         })
         .then(data => {
-            console.log('Успех:', data);
             localStorage.setItem('token', data.token); 
             window.location.href = "http://glebase.ru";
       

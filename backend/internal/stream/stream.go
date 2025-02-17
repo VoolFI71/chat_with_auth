@@ -9,12 +9,13 @@ import (
 )
 var upgrader = websocket.Upgrader{
     CheckOrigin: func(r *http.Request) bool {
-        return true // Разрешаем все источники (для разработки)
+        return true 
     },
 }
 
 var clients = make(map[*websocket.Conn]bool)
 var mu sync.Mutex
+
 func Stream(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {

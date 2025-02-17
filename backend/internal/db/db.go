@@ -9,7 +9,6 @@ import (
 func ConnectAuth() (*sql.DB, error) {
 	database, err := sql.Open("postgres", "postgresql://postgres:1234@db:5432/go?sslmode=disable") 
     if err != nil {
-		//panic(err)
         return nil, err
     }
 
@@ -18,8 +17,6 @@ func ConnectAuth() (*sql.DB, error) {
 		defer database.Close()
 		return nil, fmt.Errorf("Ошибка при проверке соединения: %w", err)
     }
-
-    //_, err = database.Exec(`DROP TABLE g`)
 
     _, err = database.Exec(`CREATE TABLE IF NOT EXISTS g (
         username VARCHAR(50) UNIQUE,
@@ -38,13 +35,10 @@ func ConnectAuth() (*sql.DB, error) {
 func ConnectChat() (*sql.DB, error) {
 	database, err := sql.Open("postgres", "postgresql://postgres:1234@db:5432/go?sslmode=disable") 
     if err != nil {
-		//panic(err)
         return nil, err
     }
-    //defer database.Close()
 
     if err := database.Ping(); err != nil {
-        log.Fatal("Ошибка при проверке соединения:", err)
 		database.Close()
 		return nil, fmt.Errorf("Ошибка при проверке соединения: %w", err)
     }
@@ -62,14 +56,14 @@ func ConnectChat() (*sql.DB, error) {
         image BYTEA
     )`)
     if err != nil {
-        defer database.Close()
+        database.Close()
         return nil, err
     }
 
-    // _, err = database.Exec("CREATE INDEX idx_created_at ON chat (created_at)")
-    // if err != nil {
-    //     fmt.Println("Error creating index:", err)
-    //     return nil, err
-    // }
+    _, err = database.Exec("CREATE INDEX IF NOT EXISTS idx_created_at ON chat (created_at)")
+    if err != nil {
+        database.Close()
+        return nil, fmt.Errorf("ошибка при создании индекса: %w", err)
+    }
     return database, nil
 }

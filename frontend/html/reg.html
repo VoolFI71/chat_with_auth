@@ -99,11 +99,11 @@
             })
             .then(data => {
                 console.log('Успех:', data);
-                alert(data.message); // Уведомление об успешной возможности создать аккаунт с этим юзернеймом и почтой
+                alert(data.message);
             })
             .catch(error => {
                 console.error('Ошибка:', error);
-                alert(error.message); // Показываем сообщение об ошибке
+                alert(error.message);
             });
         })
     </script>
@@ -138,7 +138,6 @@
                 return response.json();
             })
             .then(data => {
-                console.log(data);
                 window.location.href = "http://glebase.ru/login";
 
             })
