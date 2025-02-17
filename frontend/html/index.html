@@ -182,6 +182,15 @@
                         const li = document.createElement('li');
                         li.textContent = `${msg.username}: ${msg.message}`;
                         // Добавляем элемент в начало списка
+
+                        if (msg.image) {
+                            const img = document.createElement('img');
+                            img.src = msg.image; // Устанавливаем src на строку Base64
+                            img.style.maxWidth = '200px'; // Ограничиваем размер изображения
+                            img.style.display = 'block'; // Отображаем изображение как блок
+                            li.appendChild(img); //
+                        }
+
                         messagesList.appendChild(li); // или messagesList.insertBefore(li, messagesList.firstChild);
                     });
                 })
@@ -202,7 +211,17 @@
             conn.onmessage = function(event) {
                 const msg = JSON.parse(event.data);
                 const li = document.createElement('li');
+
                 li.textContent = `${msg.username}: ${msg.message}`; 
+
+                if (msg.image) {
+                    const img = document.createElement('img');
+                    img.src = msg.image; // Устанавливаем src на строку Base64
+                    img.style.maxWidth = '200px'; // Ограничиваем размер изображения
+                    img.style.display = 'block'; // Отображаем изображение как блок
+                    li.appendChild(img); //
+                }
+
                 messagesList.prepend(li);
             };
 
@@ -224,10 +243,10 @@
                     }
 
                     if (message) {
-                        formData.append('message', message); // Добавляем текст сообщения
+                        formData.append('message', message);
                     }
                     if (image) {
-                        formData.append('image', image); // Добавляем изображение
+                        formData.append('image', image); 
                     }
 
 
@@ -253,14 +272,28 @@
                             alert('Некорректный запрос');
                             throw new Error('Некорректный запрос');
                         } else {
-                            // Handle other status codes if necessary
                             alert('Произошла ошибка: ' + response.status);
                             throw new Error('Произошла ошибка: ' + response.status);
                         }
                     })
                     .then(data => {
                         const msg = { username: data.username, message: message };
-                        conn.send(JSON.stringify(msg))
+                        console.log(msg)
+                        // Если есть изображение, преобразуем его в Base64
+                        if (image) {
+                            const reader = new FileReader();
+                            reader.onload = function(event) {
+                                const base64Image = event.target.result; // Получаем Base64 строку
+                                console.log(base64Image)
+                                console.log(222)
+                                msg.image = base64Image; // Добавляем изображение в сообщение
+                                conn.send(JSON.stringify(msg)); // Отправляем сообщение по WebSocket
+                            };
+                            reader.readAsDataURL(image); // Читаем изображение как Data URL
+                        } else {
+                            conn.send(JSON.stringify(msg)); // Отправляем сообщение без изображения
+                        }
+
                         document.getElementById('message').value = ''; 
                         imageInput.value = '';
                     })
