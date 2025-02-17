@@ -165,9 +165,9 @@
             function getMessages() {
                 fetch('http://127.0.0.1:8080/getmsg', {
                     method: 'GET', 
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
+                    // headers: {
+                    //     'Content-Type': 'application/json',
+                    // }
                 })
                 .then(response => {
                     if (!response.ok) {
@@ -176,6 +176,7 @@
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Полученные данные:', data); // Добавьте эту строку
                     const messagesList = document.getElementById('messages'); // Получаем элемент
                     messagesList.innerHTML = ''; // Очищаем предыдущие сообщения
                     data.forEach(msg => {
@@ -186,6 +187,8 @@
                         if (msg.image) {
                             const img = document.createElement('img');
                             img.src = msg.image; // Устанавливаем src на строку Base64
+                            img.src = `data:image/png;base64,${msg.image}`;
+
                             img.style.maxWidth = '200px'; // Ограничиваем размер изображения
                             img.style.display = 'block'; // Отображаем изображение как блок
                             li.appendChild(img); //

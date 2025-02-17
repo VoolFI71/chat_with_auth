@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/websocket"
+	"encoding/base64"
+
 )
 
 var upgrader = websocket.Upgrader{
@@ -143,16 +145,16 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
 
 	var messages []ChatMessage
 	for rows.Next() {
-		var msg ChatMessage
-        if err := rows.Scan(&msg.Username, &msg.Message, &msg.CreatedAt, &msg.Image); err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-
-
-		messages = append(messages, msg)
-
-	}
+        var msg ChatMessage
+        var imageData []byte
+        if err := rows.Scan(&msg.Username, &msg.Message, &msg.CreatedAt, &imageData); err != nil {
+            return nil, err
+        }
+        if imageData != nil {
+            msg.Image = base64.StdEncoding.EncodeToString(imageData)
+        }
+        messages = append(messages, msg)
+    }
 
 	if err := rows.Err(); err != nil {
 		fmt.Println(err)	
