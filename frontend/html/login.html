@@ -65,7 +65,7 @@
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
 
-        fetch('http://glebase.ru:8080/login', {
+        fetch('http://127.0.0.1:8080/login', {
             method: 'POST',
             credentials: 'include', 
 
@@ -85,7 +85,7 @@
         })
         .then(data => {
             localStorage.setItem('token', data.token); 
-            window.location.href = "http://glebase.ru";
+            window.location.href = "http://127.0.0.1";
       
         })
         .catch((error) => {

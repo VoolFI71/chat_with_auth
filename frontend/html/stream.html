@@ -86,7 +86,7 @@
         }
 
 
-        const signalingChannel = new SignalingChannel('ws://glebase.ru:8080/wsstream');
+        const signalingChannel = new SignalingChannel('ws://127.0.0.1:8080/wsstream');
 
         signalingChannel.onMessageReceived(async (message) => {
             if (message.type === 'offer') {
