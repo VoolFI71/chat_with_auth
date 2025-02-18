@@ -39,23 +39,22 @@ func main() {
         log.Fatalf("Ошибка загрузки .env файла: %v", err)
     }
 
+    err = db.Connect()
+    if err != nil {
+        log.Fatalf("Ошибка подключения к базе данных: %v", err)
+    }
+    defer db.Close() 
+    database := db.GetDB()
+
     router := gin.Default()
     router.Use(cors.New(cors.Config{
-        AllowOrigins:     []string{"http://127.0.0.1"}, // Укажите адрес вашего фронтенда
+        AllowOrigins:     []string{"http://127.0.0.1"}, //адрес фронтенда
         AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Разрешенные методы
         AllowHeaders:     []string{"Authorization", "Content-Type"}, // Разрешенные заголовки
         ExposeHeaders:    []string{"Content-Length"}, // Заголовки, которые могут быть доступны клиенту
         AllowCredentials: true, // Разрешить отправку учетных данных
     }))
 
-    database, err := db.ConnectAuth()
-    if (err!=nil){
-        panic(err)
-    }
-    databasemsg, err := db.ConnectChat()
-    if (err!=nil){
-        panic(err)
-    }
 
     sessionsOptions := sessions.Options{
         MaxAge:   1000,
@@ -63,13 +62,10 @@ func main() {
     }
 
 
-    store, err := postgres.NewStore(database, []byte("secret"))
+    store, err := postgres.NewStore(db.GetDB(), []byte("secret"))
     if err != nil {
-        panic(err)
-    }    
-    defer database.Close()
-    defer databasemsg.Close()
-
+        log.Fatalf("Ошибка создания хранилища сессий: %v", err)
+    }
     
     router.Use(sessions.Sessions("mysession", store))
     router.Use(func(c *gin.Context) {
@@ -78,17 +74,17 @@ func main() {
         c.Next()
     })
 
-    //router.Use(cors.Default()) // Разрешает все источники
 
     go websocket.HandleMessages()
 
+
     router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
     router.GET(`/`, handlers.MainPage)
-    router.GET("/wsstream", stream.Stream) // Теперь это работает
-    router.GET("/ws", websocket.SendMsg(databasemsg))
+    router.GET("/wsstream", stream.Stream)
+    router.GET("/ws", websocket.SendMsg(database))
 
-    router.GET("/getmsg", websocket.GetMessagesHandler(databasemsg))
-    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(databasemsg)) //отправка сообщения
+    router.GET("/getmsg", websocket.GetMessagesHandler(database))
+    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(database))
 
     router.POST("/sendmail", handlers.Sendmail(database))
     router.POST("/login", handlers.Login(database))
@@ -106,9 +102,7 @@ func main() {
             return
         }
 
-        // Парсим и проверяем токен
         token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-            // Проверяем метод подписи
             if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
                 return nil, http.ErrNotSupported
             }
@@ -120,7 +114,6 @@ func main() {
             return
         }
 
-        // Извлекаем логин пользователя из токена
         claims, ok := token.Claims.(jwt.MapClaims)
         if !ok || !token.Valid {
             c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
@@ -133,7 +126,6 @@ func main() {
             return
         }
 
-        // Возвращаем имя пользователя
         c.JSON(http.StatusOK, gin.H{
             "username": username,
         })
