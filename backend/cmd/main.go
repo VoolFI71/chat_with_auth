@@ -22,6 +22,7 @@ import (
 	"chat/internal/handlers"
 	"chat/internal/middleware"
 	"chat/internal/websocket"
+	"chat/internal/stream"
 
 	"github.com/golang-jwt/jwt/v4"
 
@@ -40,7 +41,7 @@ func main() {
 
     router := gin.Default()
     router.Use(cors.New(cors.Config{
-        AllowOrigins:     []string{"https://glebase.ru"}, // Укажите адрес вашего фронтенда
+        AllowOrigins:     []string{"http://127.0.0.1"}, // Укажите адрес вашего фронтенда
         AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Разрешенные методы
         AllowHeaders:     []string{"Authorization", "Content-Type"}, // Разрешенные заголовки
         ExposeHeaders:    []string{"Content-Length"}, // Заголовки, которые могут быть доступны клиенту
@@ -83,12 +84,12 @@ func main() {
 
     router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
     router.GET(`/`, handlers.MainPage)
-
-    router.GET("/stream", websocket.HandleWebSocket) // Теперь это работает
+    router.GET("/wsstream", stream.Stream) // Теперь это работает
     router.GET("/ws", websocket.SendMsg(databasemsg))
 
     router.GET("/getmsg", websocket.GetMessagesHandler(databasemsg))
-    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(databasemsg))
+    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(databasemsg)) //отправка сообщения
+
     router.POST("/sendmail", handlers.Sendmail(database))
     router.POST("/login", handlers.Login(database))
     router.POST("/reg", handlers.Reg(database))
