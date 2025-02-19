@@ -18,9 +18,9 @@ func Connect() error {
     if err := database.Ping(); err != nil {
         return err
     }
+        //DROP TABLE chat;
 
     _, err = database.Exec(`
-        DROP TABLE chat;
 
         CREATE TABLE IF NOT EXISTS g (
             username VARCHAR(50) UNIQUE,

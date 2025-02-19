@@ -40,7 +40,7 @@ function logout() {
             return response.json();
         })
         .then(data => {
-            document.getElementById('username-display').textContent = `Привет, ${data.username}!`;
+            document.getElementById('username-display').textContent = `${data.username}`;
         })
         .catch(error => {
             console.error('Error fetching user info:', error);
