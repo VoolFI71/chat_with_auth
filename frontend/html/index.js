@@ -40,7 +40,7 @@ function logout() {
             return response.json();
         })
         .then(data => {
-            document.getElementById('username-display').textContent = `${data.username}`;
+            document.getElementById('username-display').textContent = data.username;
         })
         .catch(error => {
             console.error('Error fetching user info:', error);
@@ -79,7 +79,7 @@ function logout() {
                     li.appendChild(img); //
                 }
 
-                fragment.appendChild(li); // Добавляем элемент li во фрагмент
+                fragment.appendChild(li);
             });
             messagesList.appendChild(fragment); // Добавляем все элементы во фрагмент за один раз
 

@@ -18,9 +18,9 @@ func Connect() error {
     if err := database.Ping(); err != nil {
         return err
     }
-        //DROP TABLE chat;
 
     _, err = database.Exec(`
+        DROP TABLE chat;
 
         CREATE TABLE IF NOT EXISTS g (
             username VARCHAR(50) UNIQUE,
@@ -34,7 +34,9 @@ func Connect() error {
             username VARCHAR(50),
             message VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            image BYTEA
+            image BYTEA,
+            audio_data BYTEA
+
         );
 
         CREATE INDEX IF NOT EXISTS idx_created_at_chat_id ON chat (created_at, chat_id); 
