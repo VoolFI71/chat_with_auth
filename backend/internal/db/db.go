@@ -16,10 +16,12 @@ func Connect() error {
     }
 
     if err := database.Ping(); err != nil {
-        return fmt.Errorf("Ошибка при проверке соединения: %w", err)
+        return err
     }
 
     _, err = database.Exec(`
+        DROP TABLE chat;
+
         CREATE TABLE IF NOT EXISTS g (
             username VARCHAR(50) UNIQUE,
             password VARCHAR(100),
@@ -28,14 +30,16 @@ func Connect() error {
         );
         
         CREATE TABLE IF NOT EXISTS chat (
+            chat_id INTEGER,  
             username VARCHAR(50),
             message VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             image BYTEA
         );
 
-        CREATE INDEX IF NOT EXISTS idx_created_at ON chat (created_at);
-    `)
+        CREATE INDEX IF NOT EXISTS idx_created_at_chat_id ON chat (created_at, chat_id); 
+       `)
+
     if err != nil {
         return fmt.Errorf("ошибка при создании таблиц: %w", err)
     }

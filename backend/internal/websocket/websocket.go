@@ -116,7 +116,7 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc {
         }
 
         go func() {
-			_, err = db.Exec("INSERT INTO chat (username, message, image) VALUES ($1, $2, $3)", username, message, imageData)
+			_, err = db.Exec("INSERT INTO chat (chat_id, username, message, image) VALUES ($1, $2, $3, $4)", 1, username, message, imageData)
 			if err != nil {
 				fmt.Println("Failed to save message:", err)
 				return
@@ -139,7 +139,7 @@ func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 }
 
 func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
-	rows, err := db.Query("SELECT username, message, created_at, image FROM chat ORDER BY created_at DESC LIMIT 75")
+	rows, err := db.Query("SELECT username, message, created_at, image FROM chat WHERE chat_id=1 ORDER BY created_at DESC LIMIT 75")
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
