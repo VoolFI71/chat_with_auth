@@ -55,166 +55,179 @@ function logout() {
         });
     }
 
-    function getMessages() {
-        fetch('http://127.0.0.1:8080/getmsg', {
-            method: 'GET', 
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+function getMessages() {
+    fetch('http://127.0.0.1:8080/getmsg', {
+        method: 'GET', 
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        const messagesList = document.getElementById('messages'); 
+        messagesList.innerHTML = ''; 
+        const fragment = document.createDocumentFragment(); // Создаем DocumentFragment
+
+        data.forEach(msg => {
+            const li = document.createElement('li');
+            if (msg.message) {
+                li.textContent += `${msg.username}: ${msg.message} `;
+            } else {
+                li.textContent += `${msg.username}: `;
             }
-            return response.json();
-        })
-        .then(data => {
-            console.log(data)
-            const messagesList = document.getElementById('messages'); 
-            messagesList.innerHTML = ''; 
-            const fragment = document.createDocumentFragment(); // Создаем DocumentFragment
-
-            data.forEach(msg => {
-                const li = document.createElement('li');
-                if (msg.message) {
-                    li.textContent = `${msg.username}: ${msg.message}`;
-                }
-                if (msg.image) {
-                    const img = document.createElement('img');
-                    img.src = msg.image; // Устанавливаем src на строку Base64
-                    img.style.maxWidth = '200px'; // Ограничиваем размер изображения
-                    img.style.display = 'block'; // Отображаем изображение как блок
-                    li.textContent = `${msg.username}:`
-                    li.appendChild(img);
-                }
-                
-                fragment.appendChild(li);
-            });
-            messagesList.append(fragment); // Добавляем все элементы во фрагмент за один раз
-
-        })
-        .catch(error => {
-            console.error('Error fetching messages:', error);
+        
+            // Добавляем изображение, если оно есть
+            if (msg.image) {
+                const img = document.createElement('img');
+                img.src = msg.image; // Устанавливаем src на строку Base64
+                img.style.maxWidth = '200px'; // Ограничиваем размер изображения
+                img.style.display = 'block'; // Отображаем изображение как блок
+                li.appendChild(img);
+            }
+        
+            // Добавляем аудио, если оно есть
+            if (msg.audio) {
+                const audio = document.createElement('audio');
+                audio.controls = true; 
+                console.log(msg.audio)
+                audio.src = msg.audio;
+                audio.load();
+                li.appendChild(audio);
+            }
+            fragment.appendChild(li);
         });
+        messagesList.append(fragment); // Добавляем все элементы во фрагмент за один раз
+
+    })
+    .catch(error => {
+        console.error('Error fetching messages:', error);
+    });
+}
+
+window.onload = function() {
+    getMessages(); 
+};
+
+
+const conn = new WebSocket(`ws://127.0.0.1:8080/ws`);
+
+const messagesList = document.getElementById('messages');
+
+conn.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    const li = document.createElement('li');
+    console.log(data)
+    if (data.message) {
+        li.textContent = `${data.username}: ${data.message}`; 
     }
 
-    window.onload = function() {
-        getMessages(); 
-    };
+    if (data.image) {
+        const img = document.createElement('img');
+        img.src = data.image;
+        img.style.maxWidth = '200px';
+        img.style.display = 'block'; 
+        li.textContent = `${data.username}:`
+        li.appendChild(img);
+    }
+    if (data.audio) {
+        const audio = document.createElement('audio');
+        audio.controls = true; 
+        audio.src = `data:audio/wav;base64,${data.audio}`; // Изменено на audio/wav
+        li.textContent = `${data.username}:`;
+        li.appendChild(audio);
+    }
+
+    document.getElementById('messages').prepend(li);
+};
 
 
-    const conn = new WebSocket(`ws://127.0.0.1:8080/ws`);
-
-    const messagesList = document.getElementById('messages');
+function createMessage() {
+    const messageInput = document.getElementById('message');
+    const message = messageInput.value.trim();
     
-    conn.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        console.log(data)
+    if (message) {
+        const messageData = { message: message }; // Создаем объект с полем Message
 
-        const li = document.createElement('li');
-    
-        if (data.message) {
-            li.textContent = `${data.username}: ${data.message}`; 
-        }
-    
-        if (data.image) {
-            const img = document.createElement('img');
-            img.src = data.image;
-            img.style.maxWidth = '200px';
-            img.style.display = 'block'; 
-            li.textContent = `${data.username}:`
-            li.appendChild(img);
-        }
-        document.getElementById('messages').prepend(li);
-    };
-
-    function createMessage() {
-        const messageInput = document.getElementById('message');
-        const message = messageInput.value.trim();
-        
-        if (message) {
-            const messageData = { message: message }; // Создаем объект с полем Message
-
-            fetch('http://127.0.0.1:8080/savemsg', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json' // Устанавливаем заголовок для JSON
-                },
-                body: JSON.stringify(messageData) // Преобразуем объект в строку JSON
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else if (response.status === 401) { 
-                    alert('Необходимо авторизоваться');
-                    throw new Error('Необходимо авторизоваться');
-                } else if (response.status === 400) {
-                    alert('Некорректный запрос');
-                    throw new Error('Некорректный запрос');
-                } else {
-                    alert('Произошла ошибка: ' + response.status);
-                    throw new Error('Произошла ошибка: ' + response.status);
-                }
-            })
-            .then(data => {
-                const msg = { username: data.username, message: message };
-                conn.send(JSON.stringify(msg)); 
-                document.getElementById('message').value = ''; 
-                })
-                .catch(error => {
-                    console.error('Ошибка:', error);
-                });
+        fetch('http://127.0.0.1:8080/savemsg', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json' // Устанавливаем заголовок для JSON
+            },
+            body: JSON.stringify(messageData) // Преобразуем объект в строку JSON
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else if (response.status === 401) { 
+                alert('Необходимо авторизоваться');
+                throw new Error('Необходимо авторизоваться');
+            } else if (response.status === 400) {
+                alert('Некорректный запрос');
+                throw new Error('Некорректный запрос');
+            } else {
+                alert('Произошла ошибка: ' + response.status);
+                throw new Error('Произошла ошибка: ' + response.status);
             }
-        }
+        })
+        .then(data => {
+            const msg = { username: data.username, message: message };
+            conn.send(JSON.stringify(msg)); 
+            document.getElementById('message').value = ''; 
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+        });
+    }
+}
     
-        function createImage() {
-            const imageInput = document.getElementById('image')
-            const image = imageInput.files.length > 0 ? imageInput.files[0] : null;
-            const formData = new FormData(); 
+function createImage() {
+    const imageInput = document.getElementById('image')
+    const image = imageInput.files.length > 0 ? imageInput.files[0] : null;
+    const formData = new FormData(); 
 
-            formData.append('image', image);
-
-            console.log(44)
-            if (image) {
-                fetch('http://127.0.0.1:8080/saveimage', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else if (response.status === 401) { 
-                        alert('Необходимо авторизоваться');
-                        throw new Error('Необходимо авторизоваться');
-                    } else if (response.status === 400) {
-                        alert('Некорректный запрос');
-                        throw new Error('Некорректный запрос');
-                    } else {
-                        alert('Произошла ошибка: ' + response.status);
-                        throw new Error('Произошла ошибка: ' + response.status);
-                    }
-                })
-                .then(data => {
-                    const msg = { username: data.username, image:image };
-
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        const base64Image = event.target.result; // Получаем Base64 строку
-                        msg.image = base64Image; // Добавляем изображение в сообщение
-                        conn.send(JSON.stringify(msg)); // Отправляем сообщение по WebSocket
-                    };
-                    reader.readAsDataURL(image);
-                    imageInput.value = '';
-                    })
-                    .catch(error => {
-                        console.error('Ошибка:', error);
-                    })
-                }
+    formData.append('image', image);
+    if (image) {
+        fetch('http://127.0.0.1:8080/saveimage', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else if (response.status === 401) { 
+                alert('Необходимо авторизоваться');
+                throw new Error('Необходимо авторизоваться');
+            } else if (response.status === 400) {
+                alert('Некорректный запрос');
+                throw new Error('Некорректный запрос');
+            } else {
+                alert('Произошла ошибка: ' + response.status);
+                throw new Error('Произошла ошибка: ' + response.status);
             }
+        })
+        .then(data => {
+            const msg = { username: data.username, image: image };
 
-
-
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64Image = event.target.result; // Получаем Base64 строку
+                msg.image = base64Image; // Добавляем изображение в сообщение
+                conn.send(JSON.stringify(msg)); // Отправляем сообщение по WebSocket
+            };
+            reader.readAsDataURL(image);
+            imageInput.value = '';
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+        })
+    }
+}
 
 function checktype() {
     const imageInput = document.getElementById('image')
@@ -229,35 +242,6 @@ function checktype() {
         createImage()
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 let mediaRecorder;
@@ -299,7 +283,7 @@ async function startRecording() {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
-            },
+            },  
             body: formData
         })
         .then(response => {
@@ -317,17 +301,16 @@ async function startRecording() {
             }
         })
         .then(data => {
-            const msg = { username: data.username}; // Сообщение о том, что аудиосообщение отправлено
+            const msg = { username: data.username, audio: 1 }; 
             
-            // Создаем новый FileReader для чтения аудиофайла
             const reader = new FileReader();
             reader.onload = function(event) {
                 const base64Audio = event.target.result.split(',')[1]; // Получаем только Base64 часть
-                msg.type = 'audio'; // Указываем тип сообщения
-                msg.data = base64Audio; // Добавляем аудиоданные в сообщение
+                msg.audio = base64Audio; // Добавляем аудиоданные в сообщение
                 conn.send(JSON.stringify(msg)); // Отправляем сообщение по WebSocket
             };
-            reader.readAsDataURL(audioBlob); // Читаем Blob как Data URL
+            reader.readAsDataURL(audioBlob); 
+            console.log(msg)
         })
         .catch(error => {
             console.error('Ошибка сети:', error);

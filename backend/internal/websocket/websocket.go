@@ -158,8 +158,10 @@ func SaveImage(db *sql.DB) gin.HandlerFunc {
 		}
 
         imageHeader, err := c.FormFile("image")
-
-		fmt.Println(111)
+        if err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "File upload failed"})
+            return
+        }
 
         file, err := imageHeader.Open()
         if err != nil {
@@ -177,7 +179,7 @@ func SaveImage(db *sql.DB) gin.HandlerFunc {
             return
         }
 
-
+        fmt.Println(image)
         go func() {
             _, err = db.Exec("INSERT INTO chat (chat_id, username, image) VALUES ($1, $2, $3)", 1, username, image)
             if err != nil {
@@ -229,7 +231,6 @@ func SaveAudio(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-
 		audioFile, err := c.FormFile("audio")
 		if err != nil {
             c.JSON(http.StatusBadRequest, gin.H{"error": "No audio file provided"})
@@ -249,9 +250,9 @@ func SaveAudio(db *sql.DB) gin.HandlerFunc {
             return
         }
 
-
+        //fmt.Println(audio)
 		go func() {
-            _, err = db.Exec("INSERT INTO chat (chat_id, username, message,  audio_data) VALUES ($1, $2, $3, $4)", 1, username, "", audio)
+            _, err = db.Exec("INSERT INTO chat (chat_id, username, audio_data) VALUES ($1, $2, $3)", 1, username, audio)
             if err != nil {
                 fmt.Println("Failed to save audio:", err)
                 return
@@ -266,7 +267,6 @@ func SaveAudio(db *sql.DB) gin.HandlerFunc {
 func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		messages, err := GetLastMessages(db)
-		fmt.Println(messages)
 		if err != nil {
 			fmt.Println("Error fetching messages:", err) // Логируем ошибку
 
@@ -308,8 +308,10 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
             msg.Image = "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(imageData)
         }
         if len(audioData) > 0 {
-            msg.Audio = "data:audio/mpeg;base64," + base64.StdEncoding.EncodeToString(audioData)
+            msg.Audio = "data:audio/wav;base64," + base64.StdEncoding.EncodeToString(audioData)
         }
+        fmt.Println(msg, 4444)
+
         messages = append(messages, msg)
     }
 
