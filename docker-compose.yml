@@ -33,7 +33,6 @@ services:
       context: ./frontend
     volumes:
       - ./certs:/etc/ssl/certs
-      - ./certs:/etc/ssl/private
 
     ports:
       - "80:80"
