@@ -18,7 +18,7 @@ import (
 	//"github.com/gin-contrib/sessions/cookie"
 	"log"
 	//"net/http"
-	"chat/internal/db"
+	"chat/internal/handlers/db"
 	"chat/internal/handlers"
 	"chat/internal/middleware"
 	"chat/internal/websocket"
@@ -54,12 +54,10 @@ func main() {
         AllowCredentials: true, // Разрешить отправку учетных данных
     }))
 
-
     sessionsOptions := sessions.Options{
         MaxAge:   1000,
         HttpOnly: true, 
     }
-
 
     store, err := postgres.NewStore(db.GetDB(), []byte("secret"))
     if err != nil {
@@ -75,7 +73,6 @@ func main() {
 
 
     go websocket.HandleMessages()
-
 
     router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
     router.GET(`/`, handlers.MainPage)

@@ -268,7 +268,7 @@ func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		messages, err := GetLastMessages(db)
 		if err != nil {
-			fmt.Println("Error fetching messages:", err) // Логируем ошибку
+			fmt.Println("Error fetching messages:", err)
 
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch messages"})
 			return

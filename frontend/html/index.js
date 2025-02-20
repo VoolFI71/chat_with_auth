@@ -24,15 +24,15 @@ function logout() {
     }
 
     function redirectToRegister() {
-        window.location.href = 'http://127.0.0.1/reg'; 
+        window.location.href = 'http://glebase.ru/reg'; 
     }
 
     function redirectToLogin() {
-        window.location.href = 'http://127.0.0.1/login'; 
+        window.location.href = 'http://glebase.ru/login'; 
     }
 
     function getUserInfo() {
-        fetch('http://127.0.0.1:8080/userinfo', {
+        fetch('http://glebase.ru:8080/userinfo', {
             method: 'GET',
             credentials: 'include',
 
@@ -56,7 +56,7 @@ function logout() {
     }
 
 function getMessages() {
-    fetch('http://127.0.0.1:8080/getmsg', {
+    fetch('http://glebase.ru:8080/getmsg', {
         method: 'GET', 
     })
     .then(response => {
@@ -68,7 +68,7 @@ function getMessages() {
     .then(data => {
         const messagesList = document.getElementById('messages'); 
         messagesList.innerHTML = ''; 
-        const fragment = document.createDocumentFragment(); // Создаем DocumentFragment
+        const fragment = document.createDocumentFragment(); 
 
         data.forEach(msg => {
             const li = document.createElement('li');
@@ -78,16 +78,14 @@ function getMessages() {
                 li.textContent += `${msg.username}: `;
             }
         
-            // Добавляем изображение, если оно есть
             if (msg.image) {
                 const img = document.createElement('img');
                 img.src = msg.image; // Устанавливаем src на строку Base64
-                img.style.maxWidth = '200px'; // Ограничиваем размер изображения
+                img.style.maxWidth = '200px';
                 img.style.display = 'block'; // Отображаем изображение как блок
                 li.appendChild(img);
             }
         
-            // Добавляем аудио, если оно есть
             if (msg.audio) {
                 const audio = document.createElement('audio');
                 audio.controls = true; 
@@ -98,7 +96,7 @@ function getMessages() {
             }
             fragment.appendChild(li);
         });
-        messagesList.append(fragment); // Добавляем все элементы во фрагмент за один раз
+        messagesList.append(fragment); 
 
     })
     .catch(error => {
@@ -111,7 +109,7 @@ window.onload = function() {
 };
 
 
-const conn = new WebSocket(`ws://127.0.0.1:8080/ws`);
+const conn = new WebSocket(`ws://glebase.ru:8080/ws`);
 
 const messagesList = document.getElementById('messages');
 
@@ -134,7 +132,7 @@ conn.onmessage = function(event) {
     if (data.audio) {
         const audio = document.createElement('audio');
         audio.controls = true; 
-        audio.src = `data:audio/wav;base64,${data.audio}`; // Изменено на audio/wav
+        audio.src = `data:audio/wav;base64,${data.audio}`;
         li.textContent = `${data.username}:`;
         li.appendChild(audio);
     }
@@ -150,7 +148,7 @@ function createMessage() {
     if (message) {
         const messageData = { message: message }; // Создаем объект с полем Message
 
-        fetch('http://127.0.0.1:8080/savemsg', {
+        fetch('http://glebase.ru:8080/savemsg', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -190,7 +188,7 @@ function createImage() {
 
     formData.append('image', image);
     if (image) {
-        fetch('http://127.0.0.1:8080/saveimage', {
+        fetch('http://glebase.ru:8080/saveimage', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -279,7 +277,7 @@ async function startRecording() {
         const formData = new FormData();
         formData.append('audio', audioBlob, 'audio.wav'); // Добавляем аудиофайл в FormData
 
-        fetch('http://127.0.0.1:8080/saveaudio', {
+        fetch('http://glebase.ru:8080/saveaudio', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
