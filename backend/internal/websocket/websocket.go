@@ -4,14 +4,15 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	//"log"
 	"net/http"
 	"strings"
+
+	"encoding/base64"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/websocket"
-	"encoding/base64"
-
 )
 
 var upgrader = websocket.Upgrader{
@@ -25,6 +26,7 @@ type ChatMessage struct {
 	Message   string `json:"message"`
 	CreatedAt string `json:"created_at"` 
 	Image     string `json:"image"`
+	Audio     string `json:"audio"`
 }
 
 var clients = make(map[*websocket.Conn]bool)
@@ -96,41 +98,178 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		message := c.PostForm("message")
-
-        image, err := c.FormFile("image")
-        var imageData []byte
-        if err == nil {
-            file, err := image.Open()
-            if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image"})
-                return
-            }
-            defer file.Close()
-
-            imageData, err = io.ReadAll(file)
-            if err != nil {
-                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read image"})
-                return
-            }
+		var messageRequest ChatMessage
+        if err := c.BindJSON(&messageRequest); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+            return
         }
 
+        message := messageRequest.Message
+		fmt.Println(message, 55555)
         go func() {
-			_, err = db.Exec("INSERT INTO chat (chat_id, username, message, image) VALUES ($1, $2, $3, $4)", 1, username, message, imageData)
-			if err != nil {
-				fmt.Println("Failed to save message:", err)
-				return
-			}
-		}()
+            _, err = db.Exec("INSERT INTO chat (chat_id, username, message) VALUES ($1, $2, $3)", 1, username, message)
+            if err != nil {
+                fmt.Println("Failed to save message:", err)
+                return
+            }
+        }()
 
         c.JSON(http.StatusOK, gin.H{"status": "Message saved", "username":  username})
     }
 }
 
+
+func SaveImage(db *sql.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var jwtSecret = []byte("123")
+
+        tokenString := c.GetHeader("Authorization")
+        if len(tokenString) > 7 && strings.ToLower(tokenString[:7]) == "bearer " {
+            tokenString = tokenString[7:]
+        }
+
+        if tokenString == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
+            return
+        }
+
+        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+                return nil, http.ErrNotSupported
+            }
+            return jwtSecret, nil
+        })
+
+        if err != nil || !token.Valid {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+            return
+        }
+
+        // Извлечение логина пользователя из токена
+        claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok || !token.Valid {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+            return
+        }
+		username, ok := claims["username"].(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Username not found in token claims"})
+			return
+		}
+
+        imageHeader, err := c.FormFile("image")
+
+		fmt.Println(111)
+
+        file, err := imageHeader.Open()
+        if err != nil {
+            fmt.Println("Error opening file:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+            return
+        }
+        defer file.Close()
+
+        // Читаем содержимое файла
+        image, err := io.ReadAll(file)
+        if err != nil {
+            fmt.Println("Error reading file:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+            return
+        }
+
+
+        go func() {
+            _, err = db.Exec("INSERT INTO chat (chat_id, username, image) VALUES ($1, $2, $3)", 1, username, image)
+            if err != nil {
+                fmt.Println("Failed to save message:", err)
+                return
+            }
+        }()
+
+    
+        c.JSON(http.StatusOK, gin.H{"status": "Message saved", "username":  username})
+    }
+}
+
+func SaveAudio(db *sql.DB) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        var jwtSecret = []byte("123")
+
+        tokenString := c.GetHeader("Authorization")
+        if len(tokenString) > 7 && strings.ToLower(tokenString[:7]) == "bearer " {
+            tokenString = tokenString[7:]
+        }
+
+        if tokenString == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization token is required"})
+            return
+        }
+
+        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+                return nil, http.ErrNotSupported
+            }
+            return jwtSecret, nil
+        })
+
+        if err != nil || !token.Valid {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+            return
+        }
+
+        // Извлечение логина пользователя из токена
+        claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok || !token.Valid {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+            return
+        }
+		username, ok := claims["username"].(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Username not found in token claims"})
+			return
+		}
+
+
+		audioFile, err := c.FormFile("audio")
+		if err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": "No audio file provided"})
+            return
+        }
+		file, err := audioFile.Open()
+		if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open audio file"})
+            return
+        }
+        defer file.Close()
+
+
+		audio, err := io.ReadAll(file)
+		if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read audio file"})
+            return
+        }
+
+
+		go func() {
+            _, err = db.Exec("INSERT INTO chat (chat_id, username, message,  audio_data) VALUES ($1, $2, $3, $4)", 1, username, "", audio)
+            if err != nil {
+                fmt.Println("Failed to save audio:", err)
+                return
+            }
+        }()
+
+        c.JSON(http.StatusOK, gin.H{"status": "Message saved", "username":  username})
+    }
+}
+
+
 func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		messages, err := GetLastMessages(db)
+		fmt.Println(messages)
 		if err != nil {
+			fmt.Println("Error fetching messages:", err) // Логируем ошибку
+
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to fetch messages"})
 			return
 		}
@@ -139,7 +278,7 @@ func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 }
 
 func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
-	rows, err := db.Query("SELECT username, message, created_at, image FROM chat WHERE chat_id=1 ORDER BY created_at DESC LIMIT 75")
+	rows, err := db.Query("SELECT username, message, created_at, image, audio_data FROM chat WHERE chat_id=1 ORDER BY created_at DESC LIMIT 75")
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -150,11 +289,26 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
 	for rows.Next() {
         var msg ChatMessage
         var imageData []byte
-        if err := rows.Scan(&msg.Username, &msg.Message, &msg.CreatedAt, &imageData); err != nil {
+		var audioData []byte
+        var message sql.NullString // Используем sql.NullString для обработки NULL значений
+
+        if err := rows.Scan(&msg.Username, &message, &msg.CreatedAt, &imageData, &audioData); err != nil {
+			fmt.Println("Error scanning row:", err) // Логируем ошибку
+
             return nil, err
         }
-        if imageData != nil {
-            msg.Image = base64.StdEncoding.EncodeToString(imageData)
+
+        if message.Valid {
+            msg.Message = message.String // Присваиваем строку, если значение не NULL
+        } else {
+            msg.Message = "" // Или присваиваем пустую строку, если значение NULL
+        }
+
+        if len(imageData) > 0 {
+            msg.Image = "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(imageData)
+        }
+        if len(audioData) > 0 {
+            msg.Audio = "data:audio/mpeg;base64," + base64.StdEncoding.EncodeToString(audioData)
         }
         messages = append(messages, msg)
     }
@@ -163,6 +317,7 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
 		fmt.Println(err)	
 		return nil, err
 	}
+
 	return messages, nil
 }
 

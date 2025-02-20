@@ -45,6 +45,8 @@
             }
 
             .chat-messages {
+                display: flex; /* Добавлено для использования flexbox */
+                flex-direction: column-reverse; /* Отображаем элементы снизу вверх */
                 height: 380px;
                 overflow-y: auto;
                 padding: 10px;
@@ -198,7 +200,7 @@
                 <input id="message" placeholder="Введите ваше сообщение" onkeydown="checkEnter(event)" />
                 <input type="file" id="image" accept="image/*" />
                 <button id="recordButton" onclick="toggleRecording()">Записать аудио</button>
-                <button onclick="createMessage()">Отправить</button>
+                <button onclick="checktype()">Отправить</button>
 
             </div>
         </div>

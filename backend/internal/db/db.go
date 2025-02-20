@@ -36,7 +36,6 @@ func Connect() error {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             image BYTEA,
             audio_data BYTEA
-
         );
 
         CREATE INDEX IF NOT EXISTS idx_created_at_chat_id ON chat (created_at, chat_id); 

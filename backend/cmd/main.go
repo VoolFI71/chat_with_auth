@@ -22,7 +22,6 @@ import (
 	"chat/internal/handlers"
 	"chat/internal/middleware"
 	"chat/internal/websocket"
-	"chat/internal/stream"
 
 	"github.com/golang-jwt/jwt/v4"
 
@@ -80,11 +79,13 @@ func main() {
 
     router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
     router.GET(`/`, handlers.MainPage)
-    router.GET("/wsstream", stream.Stream)
     router.GET("/ws", websocket.SendMsg(database))
 
     router.GET("/getmsg", websocket.GetMessagesHandler(database))
     router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(database))
+    router.POST("/saveimage",  middleware.AuthMiddleware(), websocket.SaveImage(database))
+    router.POST("/saveaudio",  middleware.AuthMiddleware(), websocket.SaveAudio(database))
+
 
     router.POST("/sendmail", handlers.Sendmail(database))
     router.POST("/login", handlers.Login(database))
