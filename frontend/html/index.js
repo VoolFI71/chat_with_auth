@@ -24,15 +24,15 @@ function logout() {
     }
 
     function redirectToRegister() {
-        window.location.href = 'http://glebase.ru/reg'; 
+        window.location.href = 'https://glebase.ru/reg'; 
     }
 
     function redirectToLogin() {
-        window.location.href = 'http://glebase.ru/login'; 
+        window.location.href = 'https://glebase.ru/login'; 
     }
 
     function getUserInfo() {
-        fetch('http://glebase.ru:8080/userinfo', {
+        fetch('https://glebase.ru:8080/userinfo', {
             method: 'GET',
             credentials: 'include',
 
@@ -56,7 +56,7 @@ function logout() {
     }
 
 function getMessages() {
-    fetch('http://glebase.ru:8080/getmsg', {
+    fetch('https://glebase.ru:8080/getmsg', {
         method: 'GET', 
     })
     .then(response => {
@@ -109,7 +109,7 @@ window.onload = function() {
 };
 
 
-const conn = new WebSocket(`ws://glebase.ru:8080/ws`);
+const conn = new WebSocket(`wss://glebase.ru:8080/ws`);
 
 const messagesList = document.getElementById('messages');
 
@@ -148,7 +148,7 @@ function createMessage() {
     if (message) {
         const messageData = { message: message }; // Создаем объект с полем Message
 
-        fetch('http://glebase.ru:8080/savemsg', {
+        fetch('httpss://glebase.ru:8080/savemsg', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -188,7 +188,7 @@ function createImage() {
 
     formData.append('image', image);
     if (image) {
-        fetch('http://glebase.ru:8080/saveimage', {
+        fetch('httpss://glebase.ru:8080/saveimage', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -277,7 +277,7 @@ async function startRecording() {
         const formData = new FormData();
         formData.append('audio', audioBlob, 'audio.wav'); // Добавляем аудиофайл в FormData
 
-        fetch('http://glebase.ru:8080/saveaudio', {
+        fetch('httpss://glebase.ru:8080/saveaudio', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`

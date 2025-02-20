@@ -31,8 +31,13 @@ services:
   frontend:
     build:
       context: ./frontend
+    volumes:
+      - ./certs:/etc/ssl/certs
+      - ./certs:/etc/ssl/private
+
     ports:
       - "80:80"
+      - "443:443"
 
 volumes:
   db_data:

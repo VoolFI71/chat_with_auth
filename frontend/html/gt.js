@@ -3,7 +3,7 @@ const token = localStorage.getItem('token');
         if (!token) {
             alert('Пожалуйста, войдите в систему для доступа к этому ресурсу.');
         } else {
-            fetch('http://127.0.0.1:8080/gt', {
+            fetch('https://127.0.0.1:8080/gt', {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
