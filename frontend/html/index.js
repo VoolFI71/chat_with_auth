@@ -24,15 +24,15 @@ function logout() {
     }
 
     function redirectToRegister() {
-        window.location.href = 'https://glebase.ru/reg'; 
+        window.location.href = 'http://glebase.ru/reg'; 
     }
 
     function redirectToLogin() {
-        window.location.href = 'https://glebase.ru/login'; 
+        window.location.href = 'http://glebase.ru/login'; 
     }
 
     function getUserInfo() {
-        fetch('https://glebase.ru:8080/userinfo', {
+        fetch('http://glebase.ru:8080/userinfo', {
             method: 'GET',
             credentials: 'include',
 
@@ -56,7 +56,7 @@ function logout() {
     }
 
 function getMessages() {
-    fetch('https://glebase.ru:8080/getmsg', {
+    fetch('http://glebase.ru:8080/getmsg', {
         method: 'GET', 
     })
     .then(response => {
@@ -148,7 +148,7 @@ function createMessage() {
     if (message) {
         const messageData = { message: message }; // Создаем объект с полем Message
 
-        fetch('https://glebase.ru:8080/savemsg', {
+        fetch('http://glebase.ru:8080/savemsg', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -188,7 +188,7 @@ function createImage() {
 
     formData.append('image', image);
     if (image) {
-        fetch('https://glebase.ru:8080/saveimage', {
+        fetch('http://glebase.ru:8080/saveimage', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -277,7 +277,7 @@ async function startRecording() {
         const formData = new FormData();
         formData.append('audio', audioBlob, 'audio.wav'); // Добавляем аудиофайл в FormData
 
-        fetch('https://glebase.ru:8080/saveaudio', {
+        fetch('http://glebase.ru:8080/saveaudio', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
