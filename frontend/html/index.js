@@ -148,7 +148,7 @@ function createMessage() {
     if (message) {
         const messageData = { message: message }; // Создаем объект с полем Message
 
-        fetch('httpss://glebase.ru:8080/savemsg', {
+        fetch('https://glebase.ru:8080/savemsg', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -188,7 +188,7 @@ function createImage() {
 
     formData.append('image', image);
     if (image) {
-        fetch('httpss://glebase.ru:8080/saveimage', {
+        fetch('https://glebase.ru:8080/saveimage', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -277,7 +277,7 @@ async function startRecording() {
         const formData = new FormData();
         formData.append('audio', audioBlob, 'audio.wav'); // Добавляем аудиофайл в FormData
 
-        fetch('httpss://glebase.ru:8080/saveaudio', {
+        fetch('https://glebase.ru:8080/saveaudio', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
