@@ -105,7 +105,6 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc {
         }
 
         message := messageRequest.Message
-		fmt.Println(message, 55555)
         go func() {
             _, err = db.Exec("INSERT INTO chat (chat_id, username, message) VALUES ($1, $2, $3)", 1, username, message)
             if err != nil {
