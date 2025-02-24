@@ -5,7 +5,7 @@ document.getElementById('sendCodeButton').addEventListener('click', function(eve
     const password = document.getElementById('password').value;
     const email = document.getElementById('email').value;
 
-    fetch('https://glebase.ru:8080/sendmail', {
+    fetch('http://glebase.ru:8080/sendmail', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -46,7 +46,7 @@ document.getElementById('registerForm').addEventListener('submit', function(even
         email: email,
         code: code
     };
-    fetch('https://glebase.ru:8080/reg', {
+    fetch('http://glebase.ru:8080/reg', {
         method: 'POST',
         credentials: 'include',
 
@@ -63,7 +63,7 @@ document.getElementById('registerForm').addEventListener('submit', function(even
         return response.json();
     })
     .then(data => {
-        window.location.href = "https://glebase.ru/login";
+        window.location.href = "http://glebase.ru/login";
 
     })
     .catch(error => {

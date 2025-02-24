@@ -8,6 +8,8 @@ import (
 
 var database *sql.DB
 
+
+
 func Connect() error {
     var err error
     database, err = sql.Open("postgres", "postgresql://postgres:1234@db:5432/go?sslmode=disable")
@@ -20,7 +22,7 @@ func Connect() error {
     }
 
     _, err = database.Exec(`
-
+        
         CREATE TABLE IF NOT EXISTS g (
             username VARCHAR(50) UNIQUE,
             password VARCHAR(100),
@@ -33,7 +35,7 @@ func Connect() error {
             username VARCHAR(50),
             message VARCHAR(100),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            image BYTEA,
+            image VARCHAR(100),
             audio_data BYTEA
         );
 

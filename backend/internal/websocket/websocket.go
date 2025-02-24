@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+
 	//"log"
 	"net/http"
 	"strings"
@@ -12,7 +13,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+
+	//"github.com/go-redis/redis/v8"
+	"context"
+
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 var upgrader = websocket.Upgrader{
@@ -171,23 +179,61 @@ func SaveImage(db *sql.DB) gin.HandlerFunc {
         defer file.Close()
 
         // Читаем содержимое файла
-        image, err := io.ReadAll(file)
+        // image, err := io.ReadAll(file)
+        // if err != nil {
+        //     fmt.Println("Error reading file:", err)
+        //     c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+        //     return
+        // }
+
+        minioClient, err := minio.New("minio:9000", &minio.Options{
+            Creds:  credentials.NewStaticV4("123123123", "123123123", ""),
+            Secure: false,
+        })
         if err != nil {
-            fmt.Println("Error reading file:", err)
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
+            fmt.Println("Error creating MinIO client:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create MinIO client"})
+            return
+        }
+    
+        // Имя бакета
+        bucketName := "chat-files"
+        ctx := context.Background()
+
+        // Создаем бакет, если он не существует 
+        exists, err := minioClient.BucketExists(ctx, bucketName)
+        if err != nil {
+            fmt.Println("Error checking bucket existence:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check bucket existence"})
+            return
+        }
+        if !exists {
+            err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+            if err != nil {
+                fmt.Println("Error creating bucket:", err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create bucket"})
+                return
+            }
+        }
+        imageUrl := uuid.New().String() // Имя загруженного файла
+
+        // Загружаем изображение в MinIO
+        _, err = minioClient.PutObject(ctx, bucketName, imageUrl, file, imageHeader.Size, minio.PutObjectOptions{})
+        if err != nil {
+            fmt.Println("Error uploading image:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
             return
         }
 
-        fmt.Println(image)
+        fmt.Println(imageUrl)
         go func() {
-            _, err = db.Exec("INSERT INTO chat (chat_id, username, image) VALUES ($1, $2, $3)", 1, username, image)
+            _, err = db.Exec("INSERT INTO chat (chat_id, username, image) VALUES ($1, $2, $3)", 1, username, imageUrl)
             if err != nil {
                 fmt.Println("Failed to save message:", err)
                 return
             }
         }()
 
-    
         c.JSON(http.StatusOK, gin.H{"status": "Message saved", "username":  username})
     }
 }
@@ -287,11 +333,11 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
 	var messages []ChatMessage
 	for rows.Next() {
         var msg ChatMessage
-        var imageData []byte
+		var imageUrl sql.NullString // Используем sql.NullString для обработки NULL значений
 		var audioData []byte
         var message sql.NullString // Используем sql.NullString для обработки NULL значений
 
-        if err := rows.Scan(&msg.Username, &message, &msg.CreatedAt, &imageData, &audioData); err != nil {
+        if err := rows.Scan(&msg.Username, &message, &msg.CreatedAt, &imageUrl, &audioData); err != nil {
 			fmt.Println("Error scanning row:", err) // Логируем ошибку
 
             return nil, err
@@ -302,14 +348,44 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
         } else {
             msg.Message = "" // Или присваиваем пустую строку, если значение NULL
         }
+        fmt.Println("Attempting to get object with name:", imageUrl)
 
-        if len(imageData) > 0 {
+        
+        if imageUrl.Valid {
+			minioClient, err := minio.New("minio:9000", &minio.Options{
+				Creds:  credentials.NewStaticV4("123123123", "123123123", ""),
+				Secure: false,
+			})
+			if err != nil {
+				fmt.Println("Error creating MinIO client:", err)
+				return nil, err
+			}
+			bucketName := "chat-files"
+			ctx := context.Background()
+
+			// Логируем имя объекта
+			//fmt.Println("Attempting to get object with name:", imageUrl.String)
+
+			object, err := minioClient.GetObject(ctx, bucketName, imageUrl.String, minio.GetObjectOptions{})
+			if err != nil {
+				fmt.Println("Error getting object:", err)
+				return nil, err
+			}
+			defer object.Close()
+
+			imageData, err := io.ReadAll(object)
+			if err != nil {
+				fmt.Println("Error reading image data:", err)
+				return nil, err
+			}
+            //fmt.Println(imageData)
             msg.Image = "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(imageData)
-        }
+
+		}
+        
         if len(audioData) > 0 {
             msg.Audio = "data:audio/wav;base64," + base64.StdEncoding.EncodeToString(audioData)
         }
-        fmt.Println(msg, 4444)
 
         messages = append(messages, msg)
     }

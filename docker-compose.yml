@@ -1,6 +1,20 @@
 
 
 services:
+
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"  # Порт для доступа к MinIO
+      - "9001:9001"  # Порт для консоли MinIO
+    environment:
+      MINIO_ACCESS_KEY: 123123123
+      MINIO_SECRET_KEY: 123123123
+    volumes:
+      - minio_data:/data  # Место для хранения данных
+
+    command: server /data --console-address ":9001"  # Запуск MinIO с указанием консоли
+
   db:
     image: postgres:latest
     environment:
@@ -39,7 +53,9 @@ services:
 
     ports:
       - "80:80"
-      - "443:443"
+      # - "443:443"
 
 volumes:
   db_data:
+  minio_data:
+

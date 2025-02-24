@@ -24,15 +24,15 @@ function logout() {
     }
 
     function redirectToRegister() {
-        window.location.href = 'https://glebase.ru/reg'; 
+        window.location.href = 'http://glebase.ru/reg'; 
     }
 
     function redirectToLogin() {
-        window.location.href = 'https://glebase.ru/login'; 
+        window.location.href = 'http://glebase.ru/login'; 
     }
 
     function getUserInfo() {
-        fetch('https://glebase.ru:8080/userinfo', {
+        fetch('http://glebase.ru:8080/userinfo', {
             method: 'GET',
             credentials: 'include',
 
@@ -56,7 +56,7 @@ function logout() {
     }
 
 function getMessages() {
-    fetch('https://glebase.ru:8080/getmsg', {
+    fetch('http://glebase.ru:8080/getmsg', {
         method: 'GET', 
     })
     .then(response => {
@@ -89,7 +89,6 @@ function getMessages() {
             if (msg.audio) {
                 const audio = document.createElement('audio');
                 audio.controls = true; 
-                console.log(msg.audio)
                 audio.src = msg.audio;
                 audio.load();
                 li.appendChild(audio);
@@ -109,14 +108,13 @@ window.onload = function() {
 };
 
 
-const conn = new WebSocket(`wss://glebase.ru:8080/ws`);
+const conn = new WebSocket(`ws://glebase.ru:8080/ws`);
 
 const messagesList = document.getElementById('messages');
 
 conn.onmessage = function(event) {
     const data = JSON.parse(event.data);
     const li = document.createElement('li');
-    console.log(data)
     if (data.message) {
         li.textContent = `${data.username}: ${data.message}`; 
     }
@@ -148,7 +146,7 @@ function createMessage() {
     if (message) {
         const messageData = { message: message }; // Создаем объект с полем Message
 
-        fetch('https://glebase.ru:8080/savemsg', {
+        fetch('http://glebase.ru:8080/savemsg', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -188,7 +186,7 @@ function createImage() {
 
     formData.append('image', image);
     if (image) {
-        fetch('https://glebase.ru:8080/saveimage', {
+        fetch('http://glebase.ru:8080/saveimage', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -272,12 +270,10 @@ async function startRecording() {
         audioChunks = [];
         const audioUrl = URL.createObjectURL(audioBlob);
 
-        console.log('Аудиозапись завершена:', audioUrl);
-        console.log('Аудиозапись завершена:', audioBlob);
         const formData = new FormData();
         formData.append('audio', audioBlob, 'audio.wav'); // Добавляем аудиофайл в FormData
 
-        fetch('https://glebase.ru:8080/saveaudio', {
+        fetch('http://glebase.ru:8080/saveaudio', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -308,7 +304,6 @@ async function startRecording() {
                 conn.send(JSON.stringify(msg)); // Отправляем сообщение по WebSocket
             };
             reader.readAsDataURL(audioBlob); 
-            console.log(msg)
         })
         .catch(error => {
             console.error('Ошибка сети:', error);
