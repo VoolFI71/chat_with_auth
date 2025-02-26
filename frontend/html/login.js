@@ -4,7 +4,7 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    fetch('http://glebase.ru:8080/login', {
+    fetch('http://127.0.0.1:8080/login', {
         method: 'POST',
         credentials: 'include', 
 
@@ -24,7 +24,7 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     })
     .then(data => {
         localStorage.setItem('token', data.token); 
-        window.location.href = "http://glebase.ru";
+        window.location.href = "http://127.0.0.1";
   
     })
     .catch((error) => {

@@ -4,11 +4,10 @@ import (
     "database/sql"
     "fmt"
     //"log"
+
 )
 
 var database *sql.DB
-
-
 
 func Connect() error {
     var err error

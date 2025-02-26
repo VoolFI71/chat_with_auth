@@ -18,7 +18,8 @@ import (
 
 	//"github.com/go-redis/redis/v8"
 	"context"
-
+    "github.com/gocql/gocql"
+    "log"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
@@ -40,7 +41,7 @@ type ChatMessage struct {
 var clients = make(map[*websocket.Conn]bool)
 var broadcast = make(chan ChatMessage)
 
-func SendMsg(db *sql.DB)  gin.HandlerFunc { // функция для вебсокета
+func SendMsg()  gin.HandlerFunc { // функция для вебсокета
 	return func (c *gin.Context) {
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
@@ -68,7 +69,7 @@ func SendMsg(db *sql.DB)  gin.HandlerFunc { // функция для вебсо�
 }
 
 
-func SaveMsg(db *sql.DB) gin.HandlerFunc {
+func SaveMsg(session *gocql.Session) gin.HandlerFunc {
     return func(c *gin.Context) {
         var jwtSecret = []byte("123")
 
@@ -114,19 +115,21 @@ func SaveMsg(db *sql.DB) gin.HandlerFunc {
 
         message := messageRequest.Message
         go func() {
-            _, err = db.Exec("INSERT INTO chat (chat_id, username, message) VALUES ($1, $2, $3)", 1, username, message)
-            if err != nil {
-                fmt.Println("Failed to save message:", err)
-                return
+            if session == nil {
+                log.Fatalf("Сессия не инициализирована")
+            }
+            query := session.Query("INSERT INTO chat (chat_id, username, message) VALUES (?, ?, ?)", 1, username, message)
+            if err := query.Exec(); err != nil {
+                log.Fatalf("Ошибка при добавлении сообщения в базу данных: %v", err)
             }
         }()
-
+        fmt.Println("Сообщение добавлено в базу данных")
         c.JSON(http.StatusOK, gin.H{"status": "Message saved", "username":  username})
     }
 }
 
 
-func SaveImage(db *sql.DB) gin.HandlerFunc {
+func SaveImage(session *gocql.Session) gin.HandlerFunc {
     return func(c *gin.Context) {
         var jwtSecret = []byte("123")
 
@@ -227,10 +230,9 @@ func SaveImage(db *sql.DB) gin.HandlerFunc {
 
         fmt.Println(imageUrl)
         go func() {
-            _, err = db.Exec("INSERT INTO chat (chat_id, username, image) VALUES ($1, $2, $3)", 1, username, imageUrl)
-            if err != nil {
-                fmt.Println("Failed to save message:", err)
-                return
+            query := session.Query("INSERT INTO chat (chat_id, username, image) VALUES (?, ?, ?)", 1, username, imageUrl)
+            if err := query.Exec(); err != nil {
+                log.Fatalf("Ошибка при добавлении изображения в базу данных %v", err)
             }
         }()
 
@@ -238,7 +240,7 @@ func SaveImage(db *sql.DB) gin.HandlerFunc {
     }
 }
 
-func SaveAudio(db *sql.DB) gin.HandlerFunc {
+func SaveAudio(session *gocql.Session) gin.HandlerFunc {
     return func(c *gin.Context) {
         var jwtSecret = []byte("123")
 
@@ -297,10 +299,10 @@ func SaveAudio(db *sql.DB) gin.HandlerFunc {
 
         //fmt.Println(audio)
 		go func() {
-            _, err = db.Exec("INSERT INTO chat (chat_id, username, audio_data) VALUES ($1, $2, $3)", 1, username, audio)
+            query := session.Query("INSERT INTO chat (chat_id, username, audio_data) VALUES ($1, $2, $3)", 1, username, audio)
+            err := query.Exec() // Execute the query and check for errors
             if err != nil {
-                fmt.Println("Failed to save audio:", err)
-                return
+                fmt.Println(err)
             }
         }()
 
@@ -309,9 +311,9 @@ func SaveAudio(db *sql.DB) gin.HandlerFunc {
 }
 
 
-func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
+func GetMessagesHandler(session *gocql.Session) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		messages, err := GetLastMessages(db)
+		messages, err := GetLastMessages(session)
 		if err != nil {
 			fmt.Println("Error fetching messages:", err)
 
@@ -322,25 +324,30 @@ func GetMessagesHandler(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
-	rows, err := db.Query("SELECT username, message, created_at, image, audio_data FROM chat WHERE chat_id=1 ORDER BY created_at DESC LIMIT 75")
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	defer rows.Close()
+func GetLastMessages(session *gocql.Session) ([]ChatMessage, error) {
+	iter := session.Query("SELECT username, message, created_at, image, audio_data FROM chat WHERE chat_id=1 ORDER BY created_at DESC LIMIT 75").Iter()
+    defer iter.Close()
 
 	var messages []ChatMessage
-	for rows.Next() {
+
+    minioClient, err := minio.New("minio:9000", &minio.Options{
+        Creds:  credentials.NewStaticV4("123123123", "123123123", ""),
+        Secure: false,
+    })
+    if err != nil {
+        fmt.Println("Error creating MinIO client:", err)
+        return nil, err
+    }
+
+    for {
         var msg ChatMessage
-		var imageUrl sql.NullString // Используем sql.NullString для обработки NULL значений
-		var audioData []byte
+        var imageUrl sql.NullString // Используем sql.NullString для обработки NULL значений
+        var audioData []byte
         var message sql.NullString // Используем sql.NullString для обработки NULL значений
 
-        if err := rows.Scan(&msg.Username, &message, &msg.CreatedAt, &imageUrl, &audioData); err != nil {
-			fmt.Println("Error scanning row:", err) // Логируем ошибку
-
-            return nil, err
+        if !iter.Scan(&msg.Username, &message, &msg.CreatedAt, &imageUrl, &audioData) {
+            // Если итерация завершена, выходим из цикла
+            break
         }
 
         if message.Valid {
@@ -348,41 +355,24 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
         } else {
             msg.Message = "" // Или присваиваем пустую строку, если значение NULL
         }
-        fmt.Println("Attempting to get object with name:", imageUrl)
 
-        
         if imageUrl.Valid {
-			minioClient, err := minio.New("minio:9000", &minio.Options{
-				Creds:  credentials.NewStaticV4("123123123", "123123123", ""),
-				Secure: false,
-			})
-			if err != nil {
-				fmt.Println("Error creating MinIO client:", err)
-				return nil, err
-			}
-			bucketName := "chat-files"
-			ctx := context.Background()
+            ctx := context.Background()
+            object, err := minioClient.GetObject(ctx, "chat-files", imageUrl.String, minio.GetObjectOptions{})
+            if err != nil {
+                fmt.Println("Error getting object:", err)
+                return nil, err
+            }
+            defer object.Close()
 
-			// Логируем имя объекта
-			//fmt.Println("Attempting to get object with name:", imageUrl.String)
-
-			object, err := minioClient.GetObject(ctx, bucketName, imageUrl.String, minio.GetObjectOptions{})
-			if err != nil {
-				fmt.Println("Error getting object:", err)
-				return nil, err
-			}
-			defer object.Close()
-
-			imageData, err := io.ReadAll(object)
-			if err != nil {
-				fmt.Println("Error reading image data:", err)
-				return nil, err
-			}
-            //fmt.Println(imageData)
+            imageData, err := io.ReadAll(object)
+            if err != nil {
+                fmt.Println("Error reading image data:", err)
+                return nil, err
+            }
             msg.Image = "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(imageData)
+        }
 
-		}
-        
         if len(audioData) > 0 {
             msg.Audio = "data:audio/wav;base64," + base64.StdEncoding.EncodeToString(audioData)
         }
@@ -390,13 +380,14 @@ func GetLastMessages(db *sql.DB) ([]ChatMessage, error) {
         messages = append(messages, msg)
     }
 
-	if err := rows.Err(); err != nil {
-		fmt.Println(err)	
-		return nil, err
-	}
+    if err := iter.Close(); err != nil {
+        fmt.Println("Error closing iterator:", err)
+        return nil, err
+    }
 
-	return messages, nil
+    return messages, nil
 }
+
 
 
 

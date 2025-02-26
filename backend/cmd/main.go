@@ -1,31 +1,23 @@
 package main
 
 import (
-	//"time"
-	//"fmt"
 	//"encoding/json"
-	//"database/sql"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/postgres"
 	"github.com/gin-gonic/gin"
-
-	//"github.com/gorilla/websocket"
 	"net/http"
-
 	_ "github.com/jackc/pgx/v4/stdlib"
-
-	//"github.com/gin-contrib/sessions/cookie"
 	"log"
 	//"net/http"
 	"chat/internal/handlers/db"
+    "chat/internal/handlers/db/scylla"
+
 	"chat/internal/handlers"
 	"chat/internal/middleware"
 	"chat/internal/websocket"
 
 	"github.com/golang-jwt/jwt/v4"
-
-	//"os"
 	"github.com/joho/godotenv"
 )
 
@@ -38,16 +30,22 @@ func main() {
         log.Fatalf("Ошибка загрузки .env файла: %v", err)
     }
 
-    err = db.Connect()
+    err = db.Connect()//postgres
     if err != nil {
         log.Fatalf("Ошибка подключения к базе данных: %v", err)
     }
     defer db.Close() 
     database := db.GetDB()
 
+    scylladb, err := scylla.NewDB("scylla", "123123123")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer scylladb.Close()
+
     router := gin.Default()
     router.Use(cors.New(cors.Config{
-        AllowOrigins:     []string{"http://glebase.ru"}, //адрес фронтенда
+        AllowOrigins:     []string{"http://127.0.0.1"}, //адрес фронтенда
         AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // Разрешенные методы
         AllowHeaders:     []string{"Authorization", "Content-Type"}, // Разрешенные заголовки
         ExposeHeaders:    []string{"Content-Length"}, // Заголовки, которые могут быть доступны клиенту
@@ -77,12 +75,12 @@ func main() {
 
     router.GET("/gt", middleware.AuthMiddleware(), handlers.GT)
     router.GET(`/`, handlers.MainPage)
-    router.GET("/ws", websocket.SendMsg(database))
+    router.GET("/ws", websocket.SendMsg())
 
-    router.GET("/getmsg", websocket.GetMessagesHandler(database))
-    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(database))
-    router.POST("/saveimage",  middleware.AuthMiddleware(), websocket.SaveImage(database))
-    router.POST("/saveaudio",  middleware.AuthMiddleware(), websocket.SaveAudio(database))
+    router.GET("/getmsg", websocket.GetMessagesHandler(scylladb.Session))
+    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(scylladb.Session))
+    router.POST("/saveimage",  middleware.AuthMiddleware(), websocket.SaveImage(scylladb.Session))
+    router.POST("/saveaudio",  middleware.AuthMiddleware(), websocket.SaveAudio(scylladb.Session))
 
 
     router.POST("/sendmail", handlers.Sendmail(database))

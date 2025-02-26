@@ -1,20 +1,6 @@
 
 
 services:
-
-  minio:
-    image: minio/minio
-    ports:
-      - "9000:9000"  # Порт для доступа к MinIO
-      - "9001:9001"  # Порт для консоли MinIO
-    environment:
-      MINIO_ACCESS_KEY: 123123123
-      MINIO_SECRET_KEY: 123123123
-    volumes:
-      - minio_data:/data  # Место для хранения данных
-
-    command: server /data --console-address ":9001"  # Запуск MinIO с указанием консоли
-
   db:
     image: postgres:latest
     environment:
@@ -41,6 +27,9 @@ services:
     depends_on:
       - db
       - redis
+      - scylla
+    networks:
+      - scylla-network
 
   nginx:
     image: nginx:latest
@@ -49,13 +38,41 @@ services:
     volumes:
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./frontend/html:/usr/share/nginx/html
-      - ./certs:/etc/ssl/certs  # Монтируем директорию с сертификатами
+      #- ./certs:/etc/ssl/certs  # Монтируем директорию с сертификатами
 
     ports:
       - "80:80"
       # - "443:443"
 
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"  # Порт для доступа к MinIO
+      - "9001:9001"  # Порт для консоли MinIO
+    environment:
+      MINIO_ACCESS_KEY: 123123123
+      MINIO_SECRET_KEY: 123123123
+    volumes:
+      - minio_data:/data  # Место для хранения данных
+
+    command: server /data --console-address ":9001"  # Запуск MinIO с указанием консоли
+
+  scylla:
+    image: scylladb/scylla:latest
+    container_name: scylla
+    ports:
+      - "9042:9042"  # Порт для CQL
+    volumes:
+      - scylla-data:/var/lib/scylla  # Для хранения данных
+    networks:
+      - scylla-network
+
+
 volumes:
   db_data:
   minio_data:
+  scylla-data:
 
+
+networks:
+  scylla-network:
