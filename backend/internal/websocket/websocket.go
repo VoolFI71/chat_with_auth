@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	"database/sql"
+	//"database/sql"
 	"fmt"
 	"io"
 
@@ -15,7 +15,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-
+    "time"
 	//"github.com/go-redis/redis/v8"
 	"context"
     "github.com/gocql/gocql"
@@ -33,7 +33,7 @@ var upgrader = websocket.Upgrader{
 type ChatMessage struct {
 	Username  string `json:"username"`
 	Message   string `json:"message"`
-	CreatedAt string `json:"created_at"` 
+    CreatedAt time.Time `json:"created_at"` // Измените на time.Time
 	Image     string `json:"image"`
 	Audio     string `json:"audio"`
 }
@@ -118,7 +118,7 @@ func SaveMsg(session *gocql.Session) gin.HandlerFunc {
             if session == nil {
                 log.Fatalf("Сессия не инициализирована")
             }
-            query := session.Query("INSERT INTO messages  (chat_id, username, message) VALUES (?, ?, ?)", 1, username, message)
+            query := session.Query("INSERT INTO messages (chat_id, username, message, created_at) VALUES (?, ?, ?, ?)", 1, username, message, time.Now())
             if err := query.Exec(); err != nil {
                 log.Fatalf("Ошибка при добавлении сообщения в базу данных: %v", err)
             }
@@ -230,7 +230,7 @@ func SaveImage(session *gocql.Session) gin.HandlerFunc {
 
         fmt.Println(imageUrl)
         go func() {
-            query := session.Query("INSERT INTO messages (chat_id, username, image) VALUES (?, ?, ?)", 1, username, imageUrl)
+            query := session.Query("INSERT INTO messages (chat_id, username, message, image, created_at, audio_data) VALUES (?, ?, ?, ?, ?, ?)", 1, username, "", imageUrl, time.Now(), nil)
             if err := query.Exec(); err != nil {
                 log.Fatalf("Ошибка при добавлении изображения в базу данных %v", err)
             }
@@ -291,15 +291,48 @@ func SaveAudio(session *gocql.Session) gin.HandlerFunc {
         defer file.Close()
 
 
-		audio, err := io.ReadAll(file)
-		if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read audio file"})
+        minioClient, err := minio.New("minio:9000", &minio.Options{
+            Creds:  credentials.NewStaticV4("123123123", "123123123", ""),
+            Secure: false,
+        })
+        if err != nil {
+            fmt.Println("Error creating MinIO client:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create MinIO client"})
+            return
+        }
+    
+        // Имя бакета
+        bucketName := "chat-files"
+        ctx := context.Background()
+
+        // Создаем бакет, если он не существует 
+        exists, err := minioClient.BucketExists(ctx, bucketName)
+        if err != nil {
+            fmt.Println("Error checking bucket existence:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check bucket existence"})
+            return
+        }
+        if !exists {
+            err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{})
+            if err != nil {
+                fmt.Println("Error creating bucket:", err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create bucket"})
+                return
+            }
+        }
+        audioUrl := uuid.New().String() // Имя загруженного файла
+
+        // Загружаем изображение в MinIO
+        _, err = minioClient.PutObject(ctx, bucketName, audioUrl, file, audioFile.Size, minio.PutObjectOptions{})
+        if err != nil {
+            fmt.Println("Error uploading image:", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
             return
         }
 
         //fmt.Println(audio)
 		go func() {
-            query := session.Query("INSERT INTO messages (chat_id, username, audio_data) VALUES ($1, $2, $3)", 1, username, audio)
+            query := session.Query("INSERT INTO messages (chat_id, username, message, image, created_at, audio_data) VALUES (?, ?, ?, ?, ?, ?)", 1, username, "", "", time.Now(), audioUrl)
             err := query.Exec() // Execute the query and check for errors
             if err != nil {
                 fmt.Println(err)
@@ -341,24 +374,19 @@ func GetLastMessages(session *gocql.Session) ([]ChatMessage, error) {
 
     for {
         var msg ChatMessage
-        var imageUrl sql.NullString // Используем sql.NullString для обработки NULL значений
-        var audioData []byte
-        var message sql.NullString // Используем sql.NullString для обработки NULL значений
+        var imageUrl string // Измените на string
+        var audioUrl string
+        var message string // Измените на string
 
-        if !iter.Scan(&msg.Username, &message, &msg.CreatedAt, &imageUrl, &audioData) {
+        if !iter.Scan(&msg.Username, &message, &msg.CreatedAt, &imageUrl, &audioUrl) {
             // Если итерация завершена, выходим из цикла
             break
         }
+        msg.Message = message // Присваиваем строку напрямую
 
-        if message.Valid {
-            msg.Message = message.String // Присваиваем строку, если значение не NULL
-        } else {
-            msg.Message = "" // Или присваиваем пустую строку, если значение NULL
-        }
-
-        if imageUrl.Valid {
+        if imageUrl != ""  {
             ctx := context.Background()
-            object, err := minioClient.GetObject(ctx, "chat-files", imageUrl.String, minio.GetObjectOptions{})
+            object, err := minioClient.GetObject(ctx, "chat-files", imageUrl, minio.GetObjectOptions{})
             if err != nil {
                 fmt.Println("Error getting object:", err)
                 return nil, err
@@ -373,7 +401,20 @@ func GetLastMessages(session *gocql.Session) ([]ChatMessage, error) {
             msg.Image = "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(imageData)
         }
 
-        if len(audioData) > 0 {
+        if audioUrl != "" {
+            ctx := context.Background()
+            object, err := minioClient.GetObject(ctx, "chat-files", audioUrl, minio.GetObjectOptions{})
+            if err != nil {
+                fmt.Println("Error getting object:", err)
+                return nil, err
+            }
+            defer object.Close()
+            
+            audioData, err := io.ReadAll(object)
+            if err != nil {
+                fmt.Println("Error reading image data:", err)
+                return nil, err
+            }
             msg.Audio = "data:audio/wav;base64," + base64.StdEncoding.EncodeToString(audioData)
         }
 
