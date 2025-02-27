@@ -21,15 +21,15 @@ services:
     build:
       context: ./backend
     environment:
-      DATABASE_URL: postgres://postgres:1234@db:5432/go
+      - CASSANDRA_HOST=cassandra # Укажите имя сервиса
+      - DATABASE_URL= postgres://postgres:1234@db:5432/go
     ports:
       - "8080:8080"
     depends_on:
       - db
       - redis
-      - scylla
-    networks:
-      - scylla-network
+      - cassandra 
+
 
   nginx:
     image: nginx:latest
@@ -47,32 +47,25 @@ services:
   minio:
     image: minio/minio
     ports:
-      - "9000:9000"  # Порт для доступа к MinIO
-      - "9001:9001"  # Порт для консоли MinIO
+      - "9000:9000" 
+      - "9001:9001" 
     environment:
       MINIO_ACCESS_KEY: 123123123
       MINIO_SECRET_KEY: 123123123
     volumes:
-      - minio_data:/data  # Место для хранения данных
+      - minio_data:/data
 
     command: server /data --console-address ":9001"  # Запуск MinIO с указанием консоли
 
-  scylla:
-    image: scylladb/scylla:latest
-    container_name: scylla
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
     ports:
-      - "9042:9042"  # Порт для CQL
+      - "9042:9042"
     volumes:
-      - scylla-data:/var/lib/scylla  # Для хранения данных
-    networks:
-      - scylla-network
-
+      - cassandra-data:/var/lib/cassandra
 
 volumes:
   db_data:
   minio_data:
-  scylla-data:
-
-
-networks:
-  scylla-network:
+  cassandra-data:

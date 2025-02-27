@@ -118,7 +118,7 @@ func SaveMsg(session *gocql.Session) gin.HandlerFunc {
             if session == nil {
                 log.Fatalf("Сессия не инициализирована")
             }
-            query := session.Query("INSERT INTO chat (chat_id, username, message) VALUES (?, ?, ?)", 1, username, message)
+            query := session.Query("INSERT INTO messages  (chat_id, username, message) VALUES (?, ?, ?)", 1, username, message)
             if err := query.Exec(); err != nil {
                 log.Fatalf("Ошибка при добавлении сообщения в базу данных: %v", err)
             }
@@ -230,7 +230,7 @@ func SaveImage(session *gocql.Session) gin.HandlerFunc {
 
         fmt.Println(imageUrl)
         go func() {
-            query := session.Query("INSERT INTO chat (chat_id, username, image) VALUES (?, ?, ?)", 1, username, imageUrl)
+            query := session.Query("INSERT INTO messages (chat_id, username, image) VALUES (?, ?, ?)", 1, username, imageUrl)
             if err := query.Exec(); err != nil {
                 log.Fatalf("Ошибка при добавлении изображения в базу данных %v", err)
             }
@@ -299,7 +299,7 @@ func SaveAudio(session *gocql.Session) gin.HandlerFunc {
 
         //fmt.Println(audio)
 		go func() {
-            query := session.Query("INSERT INTO chat (chat_id, username, audio_data) VALUES ($1, $2, $3)", 1, username, audio)
+            query := session.Query("INSERT INTO messages (chat_id, username, audio_data) VALUES ($1, $2, $3)", 1, username, audio)
             err := query.Exec() // Execute the query and check for errors
             if err != nil {
                 fmt.Println(err)
@@ -325,7 +325,7 @@ func GetMessagesHandler(session *gocql.Session) gin.HandlerFunc {
 }
 
 func GetLastMessages(session *gocql.Session) ([]ChatMessage, error) {
-	iter := session.Query("SELECT username, message, created_at, image, audio_data FROM chat WHERE chat_id=1 ORDER BY created_at DESC LIMIT 75").Iter()
+	iter := session.Query("SELECT username, message, created_at, image, audio_data FROM messages WHERE chat_id=1 ORDER BY created_at DESC LIMIT 75").Iter()
     defer iter.Close()
 
 	var messages []ChatMessage

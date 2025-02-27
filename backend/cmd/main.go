@@ -11,7 +11,7 @@ import (
 	"log"
 	//"net/http"
 	"chat/internal/handlers/db"
-    "chat/internal/handlers/db/scylla"
+    "chat/internal/handlers/db/cassandra"
 
 	"chat/internal/handlers"
 	"chat/internal/middleware"
@@ -37,11 +37,11 @@ func main() {
     defer db.Close() 
     database := db.GetDB()
 
-    scylladb, err := scylla.NewDB("scylla", "123123123")
+    cassandra := cassandra.NewDB("cassandra", "chat")
     if err != nil {
         log.Fatal(err)
     }
-    defer scylladb.Close()
+    defer cassandra.Close()
 
     router := gin.Default()
     router.Use(cors.New(cors.Config{
@@ -77,10 +77,10 @@ func main() {
     router.GET(`/`, handlers.MainPage)
     router.GET("/ws", websocket.SendMsg())
 
-    router.GET("/getmsg", websocket.GetMessagesHandler(scylladb.Session))
-    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(scylladb.Session))
-    router.POST("/saveimage",  middleware.AuthMiddleware(), websocket.SaveImage(scylladb.Session))
-    router.POST("/saveaudio",  middleware.AuthMiddleware(), websocket.SaveAudio(scylladb.Session))
+    router.GET("/getmsg", websocket.GetMessagesHandler(cassandra.Session))
+    router.POST("/savemsg",  middleware.AuthMiddleware(), websocket.SaveMsg(cassandra.Session))
+    router.POST("/saveimage",  middleware.AuthMiddleware(), websocket.SaveImage(cassandra.Session))
+    router.POST("/saveaudio",  middleware.AuthMiddleware(), websocket.SaveAudio(cassandra.Session))
 
 
     router.POST("/sendmail", handlers.Sendmail(database))
