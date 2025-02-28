@@ -9,51 +9,51 @@ function checkEnter(event) {
 function logout() {
     localStorage.removeItem('token');
     window.location.reload();
-    }
+}
 
-    const token = localStorage.getItem('token');
+const token = localStorage.getItem('token');
 
-    if (token) {
-        document.getElementById('auth-buttons').style.display = 'none';
-        document.getElementById('user-info').style.display = 'block';
-        getUserInfo();
-        getMessages();
-    } else {
-        document.getElementById('auth-buttons').style.display = 'block';
-        document.getElementById('user-info').style.display = 'none';
-    }
+if (token) {
+    document.getElementById('auth-buttons').style.display = 'none';
+    document.getElementById('user-info').style.display = 'block';
+    getUserInfo();
+    getMessages();
+} else {
+    document.getElementById('auth-buttons').style.display = 'block';
+    document.getElementById('user-info').style.display = 'none';
+}
 
-    function redirectToRegister() {
-        window.location.href = 'http://glebase.ru/reg'; 
-    }
+function redirectToRegister() {
+    window.location.href = 'http://glebase.ru/reg'; 
+}
 
-    function redirectToLogin() {
-        window.location.href = 'http://glebase.ru/login'; 
-    }
+function redirectToLogin() {
+    window.location.href = 'http://glebase.ru/login'; 
+}
 
-    function getUserInfo() {
-        fetch('http://glebase.ru:8080/userinfo', {
-            method: 'GET',
-            credentials: 'include',
+function getUserInfo() {
+    fetch('http://glebase.ru:8080/userinfo', {
+        method: 'GET',
+        credentials: 'include',
 
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            document.getElementById('username-display').textContent = data.username;
-        })
-        .catch(error => {
-            console.error('Error fetching user info:', error);
-        });
-    }
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('username-display').textContent = data.username;
+    })
+    .catch(error => {
+        console.error('Error fetching user info:', error);
+    });
+}
 
 function getMessages() {
     fetch('http://glebase.ru:8080/getmsg', {
@@ -72,30 +72,65 @@ function getMessages() {
 
         data.forEach(msg => {
             const li = document.createElement('li');
+            const messageContainer = document.createElement('div');
+            messageContainer.classList.add('message-container'); // Добавляем класс для контейнера сообщения
+
+            // Создаем текстовое сообщение
+            const textNode = document.createElement('span');
+            textNode.textContent = `${msg.username}: `;
+            messageContainer.appendChild(textNode);
+
+            // Проверяем наличие сообщения
             if (msg.message) {
-                li.textContent += `${msg.username}: ${msg.message} `;
-            } else {
-                li.textContent += `${msg.username}: `;
+                const messageText = document.createElement('span');
+                messageText.textContent = msg.message;
+                messageContainer.appendChild(messageText);
             }
-        
+
+            // Проверяем наличие изображения
             if (msg.image) {
                 const img = document.createElement('img');
-                img.src = msg.image; // Устанавливаем src на строку Base64
+                img.setAttribute('data-src', msg.image); // Используем data-src
                 img.style.maxWidth = '200px';
                 img.style.display = 'block'; // Отображаем изображение как блок
-                li.appendChild(img);
+                img.classList.add('lazy'); // Добавляем класс для селектора
+                messageContainer.appendChild(img);
             }
-        
+
+            // Проверяем наличие аудио
             if (msg.audio) {
                 const audio = document.createElement('audio');
                 audio.controls = true; 
-                audio.src = msg.audio;
-                audio.load();
-                li.appendChild(audio);
+                audio.setAttribute('data-src', msg.audio); // Используем data-src
+                messageContainer.appendChild(audio);
             }
+
+            li.appendChild(messageContainer);
             fragment.appendChild(li);
         });
         messagesList.append(fragment); 
+
+        // Ленивое загружение изображений и аудио
+        const lazyElements = document.querySelectorAll('img.lazy, audio[data-src]');
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = entry.target;
+                    if (target.tagName === 'IMG') {
+                        target.src = target.getAttribute('data-src'); // Загружаем изображение
+                        target.classList.remove('lazy'); // Убираем класс lazy
+                    } else if (target.tagName === 'AUDIO') {
+                        target.src = target.getAttribute('data-src'); // Загружаем аудио
+                        target.load(); // Загружаем аудио
+                    }
+                    observer.unobserve(target); // Отключаем наблюдение за этим элементом
+                }
+            });
+        });
+
+        lazyElements.forEach(element => {
+            observer.observe(element); // Начинаем наблюдение за каждым элементом
+        });
 
     })
     .catch(error => {
