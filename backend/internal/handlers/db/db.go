@@ -21,11 +21,9 @@ func Connect() error {
     }
 
     _, err = database.Exec(`
-        
-        CREATE TABLE IF NOT EXISTS g (
+        CREATE TABLE IF NOT EXISTS users (
             username VARCHAR(50) UNIQUE,
             password VARCHAR(100),
-            balance DECIMAL(10, 2),
             email VARCHAR(50) UNIQUE
         );
         
@@ -33,7 +31,7 @@ func Connect() error {
             chat_id INTEGER,  
             username VARCHAR(50),
             message VARCHAR(100),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at INTEGER,
             image VARCHAR(100),
             audio_data BYTEA
         );

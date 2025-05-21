@@ -175,7 +175,7 @@ func Reg(db *sql.DB) gin.HandlerFunc {
             return
         } 
         if value == user.Code {
-            _, err = db.Exec("INSERT INTO g (username, password, balance, email) VALUES ($1, $2, $3, $4)", user.Username, user.Password, 0.00, user.Email)
+            _, err = db.Exec("INSERT INTO users (username, password, email) VALUES ($1, $2, $3)", user.Username, user.Password, user.Email)
             if err != nil {
                 log.Println("Ошибка при добавлении пользователя в базу данных:", err)
                 c.JSON(500, gin.H{"error": "Ошибка при добавлении пользователя"})
@@ -197,7 +197,7 @@ func Login(db *sql.DB) gin.HandlerFunc {
         }
 
         var storedPassword string
-        err := db.QueryRow("SELECT password FROM g WHERE username = $1", user.Username).Scan(&storedPassword)
+        err := db.QueryRow("SELECT password FROM users WHERE username = $1", user.Username).Scan(&storedPassword)
 
         if err != nil {
             if err == sql.ErrNoRows {
