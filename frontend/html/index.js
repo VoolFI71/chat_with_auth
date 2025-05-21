@@ -17,22 +17,21 @@ if (token) {
     document.getElementById('auth-buttons').style.display = 'none';
     document.getElementById('user-info').style.display = 'block';
     getUserInfo();
-    getMessages();
 } else {
     document.getElementById('auth-buttons').style.display = 'block';
     document.getElementById('user-info').style.display = 'none';
 }
 
 function redirectToRegister() {
-    window.location.href = 'http://glebase.ru/reg'; 
+    window.location.href = 'http://127.0.0.1/reg'; 
 }
 
 function redirectToLogin() {
-    window.location.href = 'http://glebase.ru/login'; 
+    window.location.href = 'http://127.0.0.1/login'; 
 }
 
 function getUserInfo() {
-    fetch('http://glebase.ru:8080/userinfo', {
+    fetch('http://127.0.0.1:8080/userinfo', {
         method: 'GET',
         credentials: 'include',
 
@@ -55,9 +54,13 @@ function getUserInfo() {
     });
 }
 
+let id = 0;
+
 function getMessages() {
-    fetch('http://glebase.ru:8080/getmsg', {
-        method: 'GET', 
+    const url = `http://127.0.0.1:8080/getmsg?id=${id}`;
+    console.log(id)
+    fetch(url, {
+        method: 'GET',
     })
     .then(response => {
         if (!response.ok) {
@@ -66,84 +69,66 @@ function getMessages() {
         return response.json();
     })
     .then(data => {
+        console.log(data.id)
+
         const messagesList = document.getElementById('messages'); 
         messagesList.innerHTML = ''; 
         const fragment = document.createDocumentFragment(); 
 
-        data.forEach(msg => {
+        data.messages.forEach(msg => {
             const li = document.createElement('li');
-            const messageContainer = document.createElement('div');
-            messageContainer.classList.add('message-container'); // Добавляем класс для контейнера сообщения
-
-            // Создаем текстовое сообщение
+        
             const textNode = document.createElement('span');
             textNode.textContent = `${msg.username}: `;
-            messageContainer.appendChild(textNode);
-
-            // Проверяем наличие сообщения
+            li.appendChild(textNode); 
+        
             if (msg.message) {
                 const messageText = document.createElement('span');
                 messageText.textContent = msg.message;
-                messageContainer.appendChild(messageText);
+                li.appendChild(messageText); 
             }
-
-            // Проверяем наличие изображения
+        
             if (msg.image) {
                 const img = document.createElement('img');
-                img.setAttribute('data-src', msg.image); // Используем data-src
+                img.src = msg.image;
                 img.style.maxWidth = '200px';
-                img.style.display = 'block'; // Отображаем изображение как блок
-                img.classList.add('lazy'); // Добавляем класс для селектора
-                messageContainer.appendChild(img);
+                img.style.display = 'block';
+                li.appendChild(img); 
             }
-
-            // Проверяем наличие аудио
+        
             if (msg.audio) {
                 const audio = document.createElement('audio');
                 audio.controls = true; 
-                audio.setAttribute('data-src', msg.audio); // Используем data-src
-                messageContainer.appendChild(audio);
+                audio.src = msg.audio; 
+                li.appendChild(audio); 
             }
 
-            li.appendChild(messageContainer);
             fragment.appendChild(li);
         });
         messagesList.append(fragment); 
-
-        // Ленивое загружение изображений и аудио
-        const lazyElements = document.querySelectorAll('img.lazy, audio[data-src]');
-        const observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const target = entry.target;
-                    if (target.tagName === 'IMG') {
-                        target.src = target.getAttribute('data-src'); // Загружаем изображение
-                        target.classList.remove('lazy'); // Убираем класс lazy
-                    } else if (target.tagName === 'AUDIO') {
-                        target.src = target.getAttribute('data-src'); // Загружаем аудио
-                        target.load(); // Загружаем аудио
-                    }
-                    observer.unobserve(target); // Отключаем наблюдение за этим элементом
-                }
-            });
-        });
-
-        lazyElements.forEach(element => {
-            observer.observe(element); // Начинаем наблюдение за каждым элементом
-        });
-
+        console.log('New ID from server:', data.id);
+        id = data.id || 0;
     })
     .catch(error => {
         console.error('Error fetching messages:', error);
     });
 }
 
+
+
+const messagesContainer = document.getElementById('messages');
+messagesContainer.addEventListener('scroll', () => {
+    if (messagesContainer.scrollTop === 0) {
+        getMessages(); 
+    }
+});
+
 window.onload = function() {
     getMessages(); 
 };
 
 
-const conn = new WebSocket(`ws://glebase.ru:8080/ws`);
+const conn = new WebSocket(`ws://127.0.0.1:8080/ws`);
 
 const messagesList = document.getElementById('messages');
 
@@ -179,15 +164,15 @@ function createMessage() {
     const message = messageInput.value.trim();
     
     if (message) {
-        const messageData = { message: message }; // Создаем объект с полем Message
+        const messageData = { message: message };
 
-        fetch('http://glebase.ru:8080/savemsg', {
+        fetch('http://127.0.0.1:8080/savemsg', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json' // Устанавливаем заголовок для JSON
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(messageData) // Преобразуем объект в строку JSON
+            body: JSON.stringify(messageData) 
         })
         .then(response => {
             if (response.ok) {
@@ -221,7 +206,7 @@ function createImage() {
 
     formData.append('image', image);
     if (image) {
-        fetch('http://glebase.ru:8080/saveimage', {
+        fetch('http://127.0.0.1:8080/saveimage', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -308,7 +293,7 @@ async function startRecording() {
         const formData = new FormData();
         formData.append('audio', audioBlob, 'audio.wav'); // Добавляем аудиофайл в FormData
 
-        fetch('http://glebase.ru:8080/saveaudio', {
+        fetch('http://127.0.0.1:8080/saveaudio', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
