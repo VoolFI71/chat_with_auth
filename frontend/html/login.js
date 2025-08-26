@@ -18,7 +18,7 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Ошибка входа');f
+            throw new Error('Ошибка входа');
         }
         return response.json();
     })

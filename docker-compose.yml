@@ -30,20 +30,6 @@ services:
       - redis
       - cassandra 
 
-
-  nginx:
-    image: nginx:latest
-    build:
-      context: ./frontend
-    volumes:
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./frontend/html:/usr/share/nginx/html
-      #- ./certs:/etc/ssl/certs  # Монтируем директорию с сертификатами
-
-    ports:
-      - "80:80"
-      # - "443:443"
-
   minio:
     image: minio/minio
     ports:

@@ -247,8 +247,9 @@ function createImage() {
 
 function checktype() {
     const imageInput = document.getElementById('image')
+    let image = null;
     if (imageInput){
-        const image = imageInput.files.length > 0 ? imageInput.files[0] : null;
+        image = imageInput.files.length > 0 ? imageInput.files[0] : null;
     }
     const message = document.getElementById('message').value.trim();
     if (message){
